@@ -132,18 +132,23 @@ npm run build
 ## 📂 Project Structure
 
 ```
-ImageWrangler/
+imagewrangler/
+├── public/                 # Static assets (favicon, robots.txt)
 ├── src/
-│   ├── components/       # React Components
-│   ├── layouts/          # Astro Layouts
-│   ├── lib/              # Utilities (processor, worker)
-│   ├── pages/            # Astro Pages
-│   ├── styles/           # Global CSS
-│   └── workers/          # Web Workers
-├── public/               # Static assets
-├── astro.config.mjs
-├── tailwind.config.ts
-└── package.json
+│   ├── components/         # React Components
+│   ├── layouts/            # Astro Layouts
+│   ├── lib/                # Utilities (imageProcessor, workerManager)
+│   ├── pages/              # Astro Pages
+│   ├── styles/             # Global CSS
+│   └── workers/            # Web Workers
+├── .gitignore              # Git ignore rules
+├── astro.config.mjs        # Astro Configuration
+├── LICENSE                 # MIT License
+├── package.json            # Dependencies & Scripts
+├── package-lock.json       # Dependency lock file
+├── README.md               # Project documentation
+├── tailwind.config.ts      # Tailwind CSS Configuration
+└── tsconfig.json           # TypeScript Configuration
 ```
 
 ---
