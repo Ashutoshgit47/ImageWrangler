@@ -1,0 +1,110 @@
+---
+import "../styles/global.css";
+
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "ImageWrangler - Compress, Resize & Convert Images Offline",
+  description = "A free, 100% private, client-side image tool. Compress, resize, and convert JPG, PNG, WebP, and BMP images without uploading them to a server. Secure, fast, and privacy-first.",
+} = Astro.props;
+
+const appUrl = "https://imagewrangler.pages.dev";
+
+// FAQ Schema for SEO
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Are my images uploaded to a server?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. ImageWrangler is a 100% client-side application. All image processing happens directly in your browser. Your files never leave your device.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is ImageWrangler free to use?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes, ImageWrangler is completely free to use. There are no hidden costs, subscriptions, or advertisements.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What image formats are supported?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "ImageWrangler supports reading and converting to JPG, PNG, WebP, and BMP. All processing happens securely in your browser.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does this tool work offline?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. After the initial page load, ImageWrangler can function completely offline. You can process images without an active internet connection.",
+      },
+    },
+  ],
+};
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+
+    <!-- SEO Meta Tags -->
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="ImageWrangler Team" />
+    <meta
+      name="keywords"
+      content="image compressor, image resizer, image converter, offline image tool, privacy, batch image processing, jpg, png, webp, bmp, client-side, no upload, free image tool"
+    />
+    <link rel="canonical" href={appUrl} />
+    <meta
+      name="google-site-verification"
+      content="5jhD5jimxXLLwDPE3Tf0DTh3f5Fziy0CVbkLmWwKbMU"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={appUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="ImageWrangler" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- JSON-LD Schema -->
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+
+    <title>{title}</title>
+  </head>
+  <body
+    class="min-h-screen bg-background text-foreground font-[Inter,sans-serif] antialiased"
+  >
+    <slot />
+  </body>
+</html>
