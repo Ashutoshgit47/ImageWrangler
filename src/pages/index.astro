@@ -1,0 +1,12 @@
+---
+/**
+ * ImageWrangler - Main Index Page
+ * SSR shell with client-side React app
+ */
+import Layout from "../layouts/Layout.astro";
+import { ImageWrangler } from "../components/ImageWrangler";
+---
+
+<Layout>
+	<ImageWrangler client:load />
+</Layout>
