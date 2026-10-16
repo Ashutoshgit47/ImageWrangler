@@ -72,6 +72,7 @@ export async function processImage(file: File, options: ProcessOptions): Promise
         else if (ext === 'png') originalMime = 'image/png';
         else if (ext === 'webp') originalMime = 'image/webp';
         else if (ext === 'bmp') originalMime = 'image/bmp';
+        else if (ext === 'avif') originalMime = 'image/avif';
     }
     const isFormatChanged = originalMime !== `image/${options.format}`;
 
@@ -136,20 +137,28 @@ export async function processImage(file: File, options: ProcessOptions): Promise
     }
 
     const mimeType = `image/${options.format}`;
-    const quality = (options.format === 'jpeg' || options.format === 'webp')
-      ? options.quality / 100
-      : undefined;
+    const isLossy = options.format === 'jpeg' || options.format === 'webp' || options.format === 'avif';
+    const quality = isLossy ? options.quality / 100 : undefined;
+
+    // Helper to safely convert canvas to blob with AVIF support verification
+    const safeConvertToBlob = async (c: OffscreenCanvas | HTMLCanvasElement, mime: string, q?: number): Promise<Blob> => {
+      const b = await canvasToBlob(c, mime, q);
+      if (mime === 'image/avif' && b.type !== 'image/avif' && !b.type.includes('avif')) {
+        throw new Error('AVIF export is not supported in this browser. Please select WebP or JPEG.');
+      }
+      return b;
+    };
 
     // Bug G fix: improved binary search (8 iterations → ±0.4% precision vs old 5 → ±3%)
     // Also warns via console when target KB goal cannot be achieved.
-    if (options.targetSizeKB && options.targetSizeKB > 0 && (options.format === 'jpeg' || options.format === 'webp')) {
+    if (options.targetSizeKB && options.targetSizeKB > 0 && isLossy) {
       const targetBytes = options.targetSizeKB * 1024;
       let minQ = 0.01;
       let maxQ = 1.0;
       let bestBlob: Blob | null = null;
 
       // Fast-path: if max quality already fits, return immediately
-      const maxAttempt = await canvasToBlob(canvas, mimeType, maxQ);
+      const maxAttempt = await safeConvertToBlob(canvas, mimeType, maxQ);
       if (maxAttempt.size <= targetBytes) {
         // Size guard: if the max quality output is inexplicably larger than the original,
         // AND the original already fit within the target, just use the original.
@@ -161,7 +170,7 @@ export async function processImage(file: File, options: ProcessOptions): Promise
 
       for (let i = 0; i < 8; i++) {
         const midQ = (minQ + maxQ) / 2;
-        const attempt = await canvasToBlob(canvas, mimeType, midQ);
+        const attempt = await safeConvertToBlob(canvas, mimeType, midQ);
 
         if (attempt.size <= targetBytes) {
           bestBlob = attempt;
@@ -174,7 +183,7 @@ export async function processImage(file: File, options: ProcessOptions): Promise
       if (bestBlob) return bestBlob;
 
       // Still no blob under target — return minimum quality with a warning
-      const minAttempt = await canvasToBlob(canvas, mimeType, 0.01);
+      const minAttempt = await safeConvertToBlob(canvas, mimeType, 0.01);
       console.warn(
         `[ImageWrangler] Target size ${options.targetSizeKB}KB cannot be achieved. ` +
         `Minimum output at quality=1% is ${Math.round(minAttempt.size / 1024)}KB.`
@@ -182,7 +191,7 @@ export async function processImage(file: File, options: ProcessOptions): Promise
       return minAttempt;
     }
 
-    const blob = await canvasToBlob(canvas, mimeType, quality);
+    const blob = await safeConvertToBlob(canvas, mimeType, quality);
 
     // Size guard: never return a result larger than the original file.
     // HTML Canvas encoders are often less efficient than the original file's

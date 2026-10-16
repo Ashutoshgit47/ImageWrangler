@@ -7,6 +7,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { CropRegion } from '../lib/types';
 import { cn } from '../lib/utils';
 import { RotateCcw, X } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface CropToolProps {
     imageSrc: string;
@@ -18,7 +19,7 @@ interface CropToolProps {
 }
 
 const ASPECT_RATIOS = [
-    { label: 'Free', value: null },
+    { labelKey: 'crop_free', value: null },
     { label: '1:1', value: 1 },
     { label: '16:9', value: 16 / 9 },
     { label: '9:16', value: 9 / 16 },
@@ -36,6 +37,7 @@ export function CropTool({
     onCropComplete,
     onCancel,
 }: CropToolProps) {
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const [displayScale, setDisplayScale] = useState(1);
     const [crop, setCrop] = useState<CropRegion>(
@@ -52,10 +54,19 @@ export function CropTool({
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragType, setDragType] = useState<DragType>(null);
-    // Bug B fix: use a ref instead of state for dragStart position so mouse-move
-    // updates don't trigger re-renders -> no event-listener thrash -> smooth drag.
     const dragStartRef = useRef({ x: 0, y: 0 });
     const requestRef = useRef<number | undefined>(undefined);
+
+    // Escape key listener for keyboard accessibility
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onCancel();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onCancel]);
 
     // Calculate display scale to fit image in container
     useEffect(() => {
@@ -349,7 +360,7 @@ export function CropTool({
             <div className="bg-card rounded-lg w-full max-w-3xl max-h-[95vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-border">
-                    <h3 className="text-base font-semibold">Crop Image</h3>
+                    <h3 className="text-base font-semibold">{t('crop_title')}</h3>
                     <button onClick={onCancel} className="p-1 rounded hover:bg-muted">
                         <X className="h-5 w-5" />
                     </button>
@@ -368,7 +379,7 @@ export function CropTool({
                                     : "bg-background hover:bg-muted border border-border"
                             )}
                         >
-                            {ar.label}
+                            {ar.labelKey ? t(ar.labelKey as any) : ar.label}
                         </button>
                     ))}
                     <button
@@ -376,7 +387,7 @@ export function CropTool({
                         className="px-2 py-1 text-xs rounded bg-background hover:bg-muted border border-border flex items-center gap-1"
                     >
                         <RotateCcw className="h-3 w-3" />
-                        Reset
+                        {t('crop_reset')}
                     </button>
                 </div>
 
@@ -500,13 +511,13 @@ export function CropTool({
                             onClick={onCancel}
                             className="px-3 py-1.5 text-sm rounded bg-muted hover:bg-muted/80 transition-colors"
                         >
-                            Cancel
+                            {t('crop_cancel')}
                         </button>
                         <button
                             onClick={handleSave}
                             className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                         >
-                            Apply Crop
+                            {t('crop_apply')}
                         </button>
                     </div>
                 </div>

@@ -8,7 +8,7 @@ export interface Props {
 
 const {
   title = "ImageWrangler - Compress, Resize & Convert Images Offline",
-  description = "A free, 100% private, client-side image tool. Compress, resize, and convert JPG, PNG, WebP, and BMP images without uploading them to a server. Secure, fast, and privacy-first.",
+  description = "A free, 100% private, client-side image tool. Compress, resize, and convert AVIF, JPG, PNG, WebP, and BMP images without uploading them to a server. Secure, fast, and privacy-first.",
 } = Astro.props;
 
 const appUrl = "https://imagewrangler.pages.dev";
@@ -39,7 +39,7 @@ const faqSchema = {
       name: "What image formats are supported?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "ImageWrangler supports reading and converting to JPG, PNG, WebP, and BMP. All processing happens securely in your browser.",
+        text: "ImageWrangler supports reading and converting to AVIF, JPG, PNG, WebP, and BMP. All processing happens securely in your browser.",
       },
     },
     {
@@ -63,10 +63,10 @@ const faqSchema = {
 
     <!-- SEO Meta Tags -->
     <meta name="robots" content="index, follow" />
-    <meta name="author" content="ImageWrangler Team" />
+    <meta name="author" content="Ashutosh (https://github.com/Ashutoshgit47)" />
     <meta
       name="keywords"
-      content="image compressor, image resizer, image converter, offline image tool, privacy, batch image processing, jpg, png, webp, bmp, client-side, no upload, free image tool"
+      content="image compressor, image resizer, image converter, offline image tool, privacy, batch image processing, avif, avif compressor, avif converter, jpg, png, webp, bmp, client-side, no upload, free image tool"
     />
     <link rel="canonical" href={appUrl} />
     <meta

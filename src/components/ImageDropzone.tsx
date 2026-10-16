@@ -7,6 +7,7 @@ import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { UploadCloud } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { validateImageFile } from '../lib/fileValidation';
+import { useTranslation } from '../lib/i18n';
 
 interface ImageDropzoneProps {
     onFilesAdded: (files: File[]) => void;
@@ -14,6 +15,7 @@ interface ImageDropzoneProps {
 }
 
 export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzoneProps) {
+    const { t } = useTranslation();
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,14 +113,14 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
             onKeyDown={handleKeyDown}
             role="button"
             tabIndex={0}
-            aria-label="Upload images by clicking, dragging files, or pasting from clipboard"
+            aria-label={t('dropzone_aria')}
         >
             <input
                 id="hidden-file-input"
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/jpeg,image/png,image/webp,image/bmp"
+                accept="image/jpeg,image/png,image/webp,image/bmp,image/avif"
                 className="hidden"
                 onChange={(e) => {
                     handleFiles(e.target.files);
@@ -141,14 +143,14 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
                 </div>
                 <div>
                     <p className="text-xl font-semibold mb-1">
-                        Drag & drop images here
+                        {t('dropzone_title')}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                        or click to select from your device
+                        {t('dropzone_subtitle')}
                     </p>
                 </div>
                 <p className="text-xs text-muted-foreground/60 pt-2 max-w-xs mx-auto">
-                    Secure client-side processing. Your photos never leave your device.
+                    {t('dropzone_privacy')}
                 </p>
             </div>
         </div>

@@ -7,7 +7,7 @@
 
 import { type ValidationResult, SecurityConstants } from './types';
 
-/** Magic byte signatures for supported image formats (AVIF removed) */
+/** Magic byte signatures for supported image formats */
 const FILE_SIGNATURES: Record<string, number[][]> = {
     'image/jpeg': [
         [0xFF, 0xD8, 0xFF, 0xE0],  // JFIF
@@ -21,6 +21,9 @@ const FILE_SIGNATURES: Record<string, number[][]> = {
     'image/webp': [
         // RIFF....WEBP - check first 4 bytes and bytes 8-12
         [0x52, 0x49, 0x46, 0x46],  // RIFF (WebP requires additional check)
+    ],
+    'image/avif': [
+        // ISOBMFF ftyp avif - handled by isAVIF()
     ],
     'image/bmp': [
         [0x42, 0x4D],  // BM
@@ -55,6 +58,23 @@ async function isWebP(file: File): Promise<boolean> {
     const isWEBP = header[8] === 0x57 && header[9] === 0x45 &&
         header[10] === 0x42 && header[11] === 0x50;
     return isRIFF && isWEBP;
+}
+
+/**
+ * Special check for AVIF format (ISOBMFF with 'ftyp' at offset 4 and 'avif'/'avis' brand)
+ */
+async function isAVIF(file: File): Promise<boolean> {
+    const header = await readFileHeader(file, 32);
+    if (header.length < 12) return false;
+    const isFtyp = header[4] === 0x66 && header[5] === 0x74 &&
+        header[6] === 0x79 && header[7] === 0x70;
+    if (!isFtyp) return false;
+
+    let brands = '';
+    for (let i = 8; i < header.length; i++) {
+        brands += String.fromCharCode(header[i]);
+    }
+    return brands.includes('avif') || brands.includes('avis');
 }
 
 /**
@@ -119,6 +139,10 @@ async function detectImageType(file: File): Promise<string | null> {
             if (await isWebP(file)) return mimeType;
             continue;
         }
+        if (mimeType === 'image/avif') {
+            if (await isAVIF(file)) return mimeType;
+            continue;
+        }
         if (matchesSignature(header, signatures)) {
             return mimeType;
         }
@@ -150,10 +174,9 @@ export async function validateImageFile(file: File): Promise<ValidationResult> {
     // 4. Detect actual file type from signature (Magic Bytes)
     const detectedType = await detectImageType(file);
 
-    // 5. Enforce allowed signatures (AVIF is NOT in FILE_SIGNATURES so it returns null/error)
+    // 5. Enforce allowed signatures
     if (!detectedType) {
-        // Fallback decode check? No, strictly enforce signatures for security.
-        return { isValid: false, error: 'File header does not match any supported image format (JPG, PNG, WebP, BMP)' };
+        return { isValid: false, error: 'File header does not match any supported image format (JPG, PNG, WebP, BMP, AVIF)' };
     }
 
     // 6. Check for MIME/signature mismatch (Spoofing)

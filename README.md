@@ -28,7 +28,8 @@ ImageWrangler is a **frontend-only, privacy-preserving** image tool that resizes
 - **Resize**: Set custom width/height, lock aspect ratio
 - **Crop**: Interactive 8-handle crop tool with presets (1:1, 16:9, 4:3, etc.)
 - **Compress**: Quality slider for JPEG/WebP, Target File Size mode
-- **Format Convert**: JPEG, PNG, WebP, BMP supported
+- **Format Convert**: JPEG, PNG, WebP, AVIF, BMP supported
+- **Multi-Language (i18n)**: 8 languages supported (EN, ES, FR, DE, HI, JA, ZH, PT) with auto-persistence
 
 ###  Flexible Download Options
 
@@ -85,6 +86,7 @@ ImageWrangler is a **frontend-only, privacy-preserving** image tool that resizes
 | JPEG   |     |      | Quality 1-100 |
 | PNG    |     |      | Lossless |
 | WebP   |     |      | Quality 1-100 |
+| AVIF   |     |      | Quality 1-100 (where browser supported) |
 | BMP    |     |      | Lossless |
 | GIF    |     |      | — |
 
@@ -157,7 +159,8 @@ Contributions are welcome!
 ##  Author
 
 **Ashutosh Gautam**\
-GitHub: [https://github.com/Ashutoshgit47](https://github.com/Ashutoshgit47)
+GitHub: [https://github.com/Ashutoshgit47](https://github.com/Ashutoshgit47)\
+Website: [https://ashutosh47.pages.dev/](https://ashutosh47.pages.dev/)
 
 ---
 

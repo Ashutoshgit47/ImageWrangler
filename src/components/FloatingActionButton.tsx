@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
-import { Plus, X, CheckSquare, FileDown, FolderDown, Layers, Trash2, UploadCloud } from 'lucide-react';
+import { Plus, CheckSquare, FileDown, FolderDown, Layers, Trash2, UploadCloud } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface FloatingActionButtonProps {
   imagesCount: number;
@@ -27,6 +28,7 @@ export function FloatingActionButton({
   onClearAll,
   onAddImages,
 }: FloatingActionButtonProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
 
@@ -75,42 +77,42 @@ export function FloatingActionButton({
 
   const menuItems = [
     {
-      label: 'Add Images',
+      label: t('btn_add_images'),
       icon: UploadCloud,
       onClick: () => handleAction(onAddImages),
-      colorClass: 'bg-green-600 hover:bg-green-700 text-white',
+      colorClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
       disabled: false,
     },
     {
-      label: selectedCount === imagesCount ? 'Deselect All' : 'Select All',
+      label: selectedCount === imagesCount ? t('btn_deselect_all') : t('btn_select_all'),
       icon: CheckSquare,
       onClick: () => handleAction(onSelectAll),
       colorClass: 'bg-muted hover:bg-muted/80 text-foreground',
       disabled: false,
     },
     {
-      label: 'Download All',
+      label: t('btn_download_all'),
       icon: FileDown,
       onClick: () => handleAction(onDownloadAll),
       colorClass: 'bg-primary hover:bg-primary/90 text-primary-foreground',
       disabled: !allDone,
     },
     {
-      label: isZipping ? 'Zipping...' : 'ZIP All',
+      label: isZipping ? t('zipping') : t('btn_zip_all'),
       icon: FolderDown,
       onClick: () => handleAction(onZipAll),
       colorClass: 'bg-secondary hover:bg-secondary/80 text-secondary-foreground',
       disabled: !allDone || isZipping,
     },
     {
-      label: 'Merge All',
+      label: t('btn_merge_all'),
       icon: Layers,
       onClick: () => handleAction(onMergeAll),
       colorClass: 'bg-accent hover:bg-accent/80 text-accent-foreground',
       disabled: imagesCount < 2 || isZipping,
     },
     {
-      label: 'Clear All',
+      label: selectedCount > 0 ? t('btn_clear_selected') : t('btn_clear_all'),
       icon: Trash2,
       onClick: () => handleAction(onClearAll),
       colorClass: 'bg-destructive hover:bg-destructive/90 text-destructive-foreground',
@@ -130,7 +132,7 @@ export function FloatingActionButton({
                 onClick={item.onClick}
                 disabled={item.disabled}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-3 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium transition-all duration-200 min-h-[44px]',
                   'hover:scale-105 active:scale-95',
                   'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
                   item.colorClass
@@ -148,7 +150,7 @@ export function FloatingActionButton({
       <button
         onClick={toggleMenu}
         className={cn(
-          'w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300',
+          'w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 min-h-[48px] min-w-[48px]',
           'bg-gradient-to-br from-primary to-accent text-primary-foreground',
           'hover:shadow-xl hover:scale-110 active:scale-95',
           'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',

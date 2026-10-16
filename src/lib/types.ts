@@ -7,14 +7,14 @@
 import type { PixelCrop } from 'react-image-crop';
 
 /** Supported output image formats */
-export type ImageFormat = 'jpeg' | 'png' | 'webp' | 'bmp';
+export type ImageFormat = 'jpeg' | 'png' | 'webp' | 'bmp' | 'avif';
 
 export const SecurityConstants = {
   MAX_WIDTH: 15000,
   MAX_HEIGHT: 15000,
   MAX_PIXELS: 50_000_000, // 50MP limit for decompression bomb protection
   MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB input limit
-  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.webp', '.bmp'],
+  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.avif'],
 };
 
 

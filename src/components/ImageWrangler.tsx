@@ -1,35 +1,39 @@
 /**
  * ImageWrangler - Main Application Component
- * Orchestrates image upload, processing, and batch download
+ * Orchestrates image upload, processing, batch download, i18n, and developer info
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { ImageFile, ProcessOptions } from '../lib/types';
+import { useTranslation } from '../lib/i18n';
 import { ImageDropzone } from './ImageDropzone';
 import { ImageCard } from './ImageCard';
 import { FAQ } from './FAQ';
+import { Header } from './Header';
+import { AboutDev } from './AboutDev';
 import { processImageAsync } from '../lib/workerManager';
 import { mergeImages } from '../lib/imageProcessor';
-import { formatBytes, debounce, generateId, cn } from '../lib/utils';
-import { Download, Trash2, Sparkles, Layers, FileDown, FolderDown, CheckSquare, Square } from 'lucide-react';
+import { formatBytes, generateId, cn } from '../lib/utils';
+import { Sparkles, Layers, FileDown, FolderDown, CheckSquare, Square, Trash2 } from 'lucide-react';
 import JSZip from 'jszip';
 import FloatingActionButton from './FloatingActionButton';
 
 export function ImageWrangler() {
+    const { t } = useTranslation();
     const [images, setImages] = useState<ImageFile[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isZipping, setIsZipping] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    // Track object URLs for cleanup
+    // Track object URLs for memory leak prevention
     const objectUrls = useRef(new Set<string>());
     
-    // Add version tracking for processing race conditions
+    // Concurrency and race-condition tracking
     const processingVersionRef = useRef(new Map<string, number>());
     const debounceTimeoutRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
     const imagesRef = useRef<ImageFile[]>([]);
 
-    // Sync imagesRef with state
+    // Keep imagesRef synchronized
     useEffect(() => {
         imagesRef.current = images;
     }, [images]);
@@ -42,52 +46,67 @@ export function ImageWrangler() {
         };
     }, []);
 
+    // Toast helper
+    const showToast = useCallback((message: string) => {
+        setToastMessage(message);
+        setTimeout(() => setToastMessage(null), 5000);
+    }, []);
+
     // Process a single image
     const processSingleImage = useCallback(async (id: string, initialImage?: ImageFile) => {
-        // Increment processing version
         const currentVersion = (processingVersionRef.current.get(id) || 0) + 1;
         processingVersionRef.current.set(id, currentVersion);
 
-        // Get freshest image state
         const targetImage = initialImage || imagesRef.current.find(img => img.id === id);
         if (!targetImage) return;
 
-        setImages(prev => prev.map(img =>
-            img.id === id ? { ...img, status: 'processing' } : img
-        ));
+        setImages(prev => {
+            const next = prev.map(img =>
+                img.id === id ? { ...img, status: 'processing' as const } : img
+            );
+            imagesRef.current = next;
+            return next;
+        });
 
         try {
             const processedBlob = await processImageAsync(targetImage.file, targetImage.options);
             
-            // Check if a newer process has started
+            // Discard stale async completions
             if (processingVersionRef.current.get(id) !== currentVersion) {
-                return; // Another process started, discard this result
+                return;
             }
 
             const processedUrl = URL.createObjectURL(processedBlob);
             objectUrls.current.add(processedUrl);
 
-            setImages(prev => prev.map(img => {
-                if (img.id === id) {
-                    // Revoke old processed URL if exists
-                    if (img.processedUrl && img.processedUrl !== img.previewUrl) {
-                        URL.revokeObjectURL(img.processedUrl);
-                        objectUrls.current.delete(img.processedUrl);
+            setImages(prev => {
+                const next = prev.map(img => {
+                    if (img.id === id) {
+                        if (img.processedUrl && img.processedUrl !== img.previewUrl) {
+                            URL.revokeObjectURL(img.processedUrl);
+                            objectUrls.current.delete(img.processedUrl);
+                        }
+                        return { ...img, status: 'done' as const, processedFile: processedBlob, processedUrl };
                     }
-                    return { ...img, status: 'done', processedFile: processedBlob, processedUrl };
-                }
-                return img;
-            }));
+                    return img;
+                });
+                imagesRef.current = next;
+                return next;
+            });
         } catch (error) {
             console.error('Processing error:', error);
             if (processingVersionRef.current.get(id) !== currentVersion) return;
 
-            setImages(prev => prev.map(img =>
-                img.id === id ? { ...img, status: 'error', error: 'Failed' } : img
-            ));
-            showToast(`Failed to process image`);
+            setImages(prev => {
+                const next = prev.map(img =>
+                    img.id === id ? { ...img, status: 'error' as const, error: error instanceof Error ? error.message : 'Failed' } : img
+                );
+                imagesRef.current = next;
+                return next;
+            });
+            showToast(error instanceof Error ? error.message : t('toast_process_failed'));
         }
-    }, []);
+    }, [showToast, t]);
 
     // Per-image debouncing
     const debouncedProcess = useCallback((id: string) => {
@@ -110,8 +129,9 @@ export function ImageWrangler() {
             const { width, height } = bitmap;
             bitmap.close();
 
-            const type = file.type.split('/')[1] || 'jpeg';
-            const format = (['jpeg', 'png', 'webp', 'bmp'].includes(type) ? type : 'jpeg') as ProcessOptions['format'];
+            const rawType = file.type.split('/')[1]?.toLowerCase() || 'jpeg';
+            const supported = ['jpeg', 'png', 'webp', 'bmp', 'avif'];
+            const format = (supported.includes(rawType) ? rawType : 'jpeg') as ProcessOptions['format'];
 
             const previewUrl = URL.createObjectURL(file);
             objectUrls.current.add(previewUrl);
@@ -125,7 +145,7 @@ export function ImageWrangler() {
                 status: 'pending',
                 options: {
                     format,
-                    quality: 100, // Fixed: default quality is 100 to avoid auto-compression
+                    quality: 100, // Default to 100% to preserve original quality on ingest
                     width,
                     height,
                     keepAspectRatio: true,
@@ -137,11 +157,11 @@ export function ImageWrangler() {
 
         setImages(prev => {
             const updated = [...prev, ...newImageFiles];
-            imagesRef.current = updated; // Sync immediately
+            imagesRef.current = updated;
             return updated;
         });
 
-        // Process new images
+        // Trigger processing immediately for new images
         setTimeout(() => {
             newImageFiles.forEach(img => processSingleImage(img.id, img));
         }, 0);
@@ -149,14 +169,18 @@ export function ImageWrangler() {
 
     // Handle validation errors
     const handleValidationError = useCallback((invalidFiles: string[]) => {
-        showToast(`Skipped ${invalidFiles.length} invalid file(s): ${invalidFiles.join(', ')}`);
-    }, []);
+        showToast(t('toast_skipped_invalid', { count: invalidFiles.length, files: invalidFiles.join(', ') }));
+    }, [showToast, t]);
 
     // Handle options change
     const handleOptionsChange = useCallback((id: string, options: Partial<ProcessOptions>) => {
-        setImages(prev => prev.map(img =>
-            img.id === id ? { ...img, options: { ...img.options, ...options }, status: 'pending' } : img
-        ));
+        setImages(prev => {
+            const next = prev.map(img =>
+                img.id === id ? { ...img, options: { ...img.options, ...options }, status: 'pending' as const } : img
+            );
+            imagesRef.current = next;
+            return next;
+        });
         debouncedProcess(id);
     }, [debouncedProcess]);
 
@@ -175,7 +199,7 @@ export function ImageWrangler() {
                 }
             }
             const next = prev.filter(img => img.id !== id);
-            imagesRef.current = next; // Sync immediately
+            imagesRef.current = next;
             return next;
         });
     }, []);
@@ -193,7 +217,7 @@ export function ImageWrangler() {
             }
         });
         setImages([]);
-        imagesRef.current = []; // Sync immediately
+        imagesRef.current = [];
         setSelectedIds(new Set());
     }, [images]);
 
@@ -215,13 +239,13 @@ export function ImageWrangler() {
         });
         setImages(prev => {
             const next = prev.filter(img => !selectedIds.has(img.id));
-            imagesRef.current = next; // Sync immediately
+            imagesRef.current = next;
             return next;
         });
         setSelectedIds(new Set());
     }, [images, selectedIds]);
 
-    // Download selected/all as ZIP
+    // Download selected or all as ZIP
     const handleDownloadZip = async (onlySelected: boolean = false) => {
         setIsZipping(true);
         const zip = new JSZip();
@@ -232,7 +256,7 @@ export function ImageWrangler() {
         }
 
         if (imagesToDownload.length === 0) {
-            showToast('No processed images to download');
+            showToast(t('toast_no_images'));
             setIsZipping(false);
             return;
         }
@@ -241,12 +265,10 @@ export function ImageWrangler() {
 
         imagesToDownload.forEach(image => {
             if (image.processedFile) {
-                // Bug #8 fix: safe original name extraction
-                let originalName = image.file.name.includes('.') 
+                const originalName = image.file.name.includes('.') 
                     ? image.file.name.substring(0, image.file.name.lastIndexOf('.')) 
                     : image.file.name || 'image';
                 
-                // Bug #6 fix: ZIP deduplication (Set-based to handle manual collision edge cases)
                 const ext = image.options.format === 'jpeg' ? 'jpg' : image.options.format;
                 
                 let finalName = originalName;
@@ -263,8 +285,6 @@ export function ImageWrangler() {
 
         try {
             const content = await zip.generateAsync({ type: 'blob' });
-
-            // Download using native approach
             const url = URL.createObjectURL(content);
             const a = document.createElement('a');
             a.href = url;
@@ -275,13 +295,13 @@ export function ImageWrangler() {
             URL.revokeObjectURL(url);
         } catch (e) {
             console.error(e);
-            showToast('Failed to create ZIP file');
+            showToast(t('toast_zip_failed'));
         }
 
         setIsZipping(false);
     };
 
-    // Download selected/all individually
+    // Download individually with staggered timer to avoid browser popup blocks
     const handleDownloadIndividual = (onlySelected: boolean = false) => {
         let imagesToDownload = images.filter(img => img.status === 'done' && img.processedFile && img.processedUrl);
 
@@ -290,7 +310,7 @@ export function ImageWrangler() {
         }
 
         if (imagesToDownload.length === 0) {
-            showToast('No processed images to download');
+            showToast(t('toast_no_images'));
             return;
         }
 
@@ -299,14 +319,12 @@ export function ImageWrangler() {
         imagesToDownload.forEach((image, index) => {
             setTimeout(() => {
                 if (image.processedUrl) {
-                    // Bug #8 fix: safe original name extraction
-                    let originalName = image.file.name.includes('.') 
+                    const originalName = image.file.name.includes('.') 
                         ? image.file.name.substring(0, image.file.name.lastIndexOf('.')) 
                         : image.file.name || 'image';
 
                     const ext = image.options.format === 'jpeg' ? 'jpg' : image.options.format;
                     
-                    // Bug #6 fix: Filename deduplication (Set-based)
                     let finalName = originalName;
                     let count = 0;
                     while (usedNames.has(`${finalName}.${ext}`)) {
@@ -322,10 +340,10 @@ export function ImageWrangler() {
                     a.click();
                     document.body.removeChild(a);
                 }
-            }, index * 200); // Stagger downloads
+            }, index * 200);
         });
 
-        showToast(`Downloading ${imagesToDownload.length} image(s)...`);
+        showToast(t('toast_downloading', { count: imagesToDownload.length }));
     };
 
     // Selection handlers
@@ -349,24 +367,21 @@ export function ImageWrangler() {
         }
     }, [images, selectedIds.size]);
 
-
-    // Handle Merge All
+    // Handle Merge All into grid
     const handleMergeAll = useCallback(async () => {
         if (images.length < 2) {
-            showToast("Need at least 2 images to merge.");
+            showToast(t('toast_merge_need_two'));
             return;
         }
 
         try {
-            showToast("Merging all images...");
-            // Use processed files if available, else original
+            showToast(t('toast_merging'));
             const sources = images.map(img => (img.status === 'done' && img.processedFile) ? img.processedFile : img.file);
 
             const mergedBlob = await mergeImages(sources);
             const mergedUrl = URL.createObjectURL(mergedBlob);
             objectUrls.current.add(mergedUrl);
 
-            // Add merged result as new image
             const mergedFile = new File([mergedBlob], "merged_output.jpg", { type: "image/jpeg" });
             const bitmap = await createImageBitmap(mergedBlob);
 
@@ -389,90 +404,98 @@ export function ImageWrangler() {
             };
             bitmap.close();
 
-            setImages(prev => [newImage, ...prev]); // Add to top
-            showToast("Images merged successfully!");
+            setImages(prev => {
+                const next = [newImage, ...prev];
+                imagesRef.current = next;
+                return next;
+            });
+            showToast(t('toast_merge_success'));
 
         } catch (e) {
             console.error(e);
-            showToast("Merge failed: " + (e instanceof Error ? e.message : "Unknown error"));
+            showToast(t('toast_merge_failed', { error: e instanceof Error ? e.message : "Unknown error" }));
         }
-    }, [images]);
-
-    // Toast helper
-    const showToast = (message: string) => {
-        setToastMessage(message);
-        setTimeout(() => setToastMessage(null), 5000);
-    };
+    }, [images, showToast, t]);
 
     const allDone = images.length > 0 && images.every(img => img.status === 'done' || img.status === 'error');
 
     return (
         <div className="flex flex-col min-h-screen">
-            <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
-                {/* Inline Branding */}
-                <div className="flex items-center gap-2 mb-6">
-                    <img src="/favicon.svg" alt="ImageWrangler Logo" className="h-7 w-7" />
-                    <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                        ImageWrangler
-                    </h1>
-                </div>
+            {/* Header with multi-language selector and navigation */}
+            <Header />
 
-                <div className="space-y-6">
-                    {/* Removed lg:mb-32 to reduce blank space per user request */}
+            <main className="flex-1 container mx-auto px-4 pt-20 pb-12 md:pb-16">
+                <div className="space-y-8">
+                    {/* Hero dropzone area */}
                     <div className="transition-all duration-300">
                         <ImageDropzone
                             onFilesAdded={handleFilesAdded}
                             onValidationError={handleValidationError}
                         />
-                        {/* Donation Buttons */}
-                        <div className="mt-8 flex flex-row items-center justify-center gap-4 flex-wrap">
-                            <a href="https://ko-fi.com/Y8Y11V9RQ2" target="_blank" rel="noopener noreferrer">
-                                <img height="36" style={{ border: '0px', height: '36px' }} src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee at ko-fi.com" />
-                            </a>
-                            <a href="https://buymeachai.ezee.li/ashutosh47" target="_blank" rel="noopener noreferrer">
-                                <img src="https://buymeachai.ezee.li/assets/images/buymeachai-button.png" alt="Buy Me A Chai" style={{ height: '36px', width: 'auto' }} />
-                            </a>
-                        </div>
                     </div>
 
+                    {/* Image Cards & Batch Action Bar */}
                     {images.length > 0 ? (
-                        <div className="space-y-10 mt-6">
+                        <div className="space-y-8 mt-6">
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-wrap items-center gap-3">
-                                    <h2 className="text-xl sm:text-2xl font-bold">Your Images ({images.length})</h2>
+                                    <h2 className="text-xl sm:text-2xl font-bold">
+                                        {t('your_images')} ({images.length})
+                                    </h2>
                                     {selectedIds.size > 0 && (
                                         <span className="text-sm text-primary font-medium">
-                                            {selectedIds.size} selected
+                                            {selectedIds.size} {t('selected_count')}
                                         </span>
                                     )}
-                                    {/* Action bar aligned right via sm:ml-auto */}
+
+                                    {/* Action Bar */}
                                     <div className="flex flex-wrap items-center sm:ml-auto gap-2">
-                                        <button onClick={handleSelectAll} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors">
+                                        <button
+                                            onClick={handleSelectAll}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors min-h-[40px]"
+                                        >
                                             {selectedIds.size === images.length ? <Square className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
-                                            <span className="max-sm:hidden">{selectedIds.size === images.length ? 'Deselect All' : 'Select All'}</span>
+                                            <span className="max-sm:hidden">
+                                                {selectedIds.size === images.length ? t('btn_deselect_all') : t('btn_select_all')}
+                                            </span>
                                         </button>
-                                        <button onClick={() => handleDownloadIndividual(selectedIds.size > 0)} disabled={!allDone} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 transition-colors">
+                                        <button
+                                            onClick={() => handleDownloadIndividual(selectedIds.size > 0)}
+                                            disabled={!allDone}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 transition-colors shadow-sm min-h-[40px]"
+                                        >
                                             <FileDown className="h-4 w-4" />
-                                            <span className="max-sm:hidden">Download All</span>
+                                            <span className="max-sm:hidden">{t('btn_download_all')}</span>
                                         </button>
-                                        <button onClick={() => handleDownloadZip(selectedIds.size > 0)} disabled={!allDone || isZipping} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground disabled:opacity-50 transition-colors">
+                                        <button
+                                            onClick={() => handleDownloadZip(selectedIds.size > 0)}
+                                            disabled={!allDone || isZipping}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground disabled:opacity-50 transition-colors min-h-[40px]"
+                                        >
                                             <FolderDown className="h-4 w-4" />
-                                            <span className="max-sm:hidden">{isZipping ? 'Zipping...' : 'ZIP All'}</span>
+                                            <span className="max-sm:hidden">{isZipping ? t('zipping') : t('btn_zip_all')}</span>
                                         </button>
-                                        <button onClick={handleMergeAll} disabled={images.length < 2 || isZipping} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent hover:bg-accent/80 text-accent-foreground disabled:opacity-50 transition-colors">
+                                        <button
+                                            onClick={handleMergeAll}
+                                            disabled={images.length < 2 || isZipping}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-accent hover:bg-accent/80 text-accent-foreground disabled:opacity-50 transition-colors min-h-[40px]"
+                                        >
                                             <Layers className="h-4 w-4" />
-                                            <span className="max-sm:hidden">Merge All</span>
+                                            <span className="max-sm:hidden">{t('btn_merge_all')}</span>
                                         </button>
-                                        <button onClick={selectedIds.size > 0 ? handleClearSelected : handleClearAll} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors">
+                                        <button
+                                            onClick={selectedIds.size > 0 ? handleClearSelected : handleClearAll}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors min-h-[40px]"
+                                        >
                                             <Trash2 className="h-4 w-4" />
-                                            <span className="max-sm:hidden">{selectedIds.size > 0 ? 'Clear Selected' : 'Clear All'}</span>
+                                            <span className="max-sm:hidden">{selectedIds.size > 0 ? t('btn_clear_selected') : t('btn_clear_all')}</span>
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
                             <div className={cn(
-                                "grid gap-8",
+                                "grid gap-6 sm:gap-8",
                                 images.length === 1
                                     ? "grid-cols-1 max-w-sm mx-auto"
                                     : images.length === 2
@@ -492,13 +515,13 @@ export function ImageWrangler() {
                             </div>
                         </div>
                     ) : (
-                        <div className="max-w-2xl mx-auto p-4 rounded-lg border border-dashed border-border">
+                        <div className="max-w-2xl mx-auto p-6 rounded-xl border border-dashed border-border bg-card/40">
                             <div className="flex items-start gap-3">
-                                <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                                <Sparkles className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                                 <div>
-                                    <h3 className="font-semibold">Ready to Go!</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Drop some images above to get started. All processing happens securely in your browser.
+                                    <h3 className="font-semibold text-base">{t('ready_title')}</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        {t('ready_desc')}
                                     </p>
                                 </div>
                             </div>
@@ -506,24 +529,49 @@ export function ImageWrangler() {
                     )}
                 </div>
 
+                {/* About Developer Section */}
+                <AboutDev />
+
                 {/* Separator */}
-                <hr className="my-12 md:my-20 border-border" />
+                <hr className="my-12 md:my-16 border-border" />
 
                 {/* FAQ Section */}
                 <FAQ />
             </main>
 
-            <footer className="py-6 text-center text-sm text-muted-foreground">
-                <p>© {new Date().getFullYear()} ImageWrangler. All Rights Reserved. Your files never leave your device.</p>
+            {/* Footer with Developer attribution */}
+            <footer className="py-8 border-t border-border/60 bg-card/30 text-center text-xs text-muted-foreground space-y-2">
+                <p>{t('footer_text', { year: new Date().getFullYear() })}</p>
+                <p className="flex items-center justify-center gap-1">
+                    <span>{t('footer_dev')}:</span>
+                    <a
+                        href="https://github.com/Ashutoshgit47"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-medium"
+                    >
+                        GitHub
+                    </a>
+                    <span>•</span>
+                    <a
+                        href="https://ashutosh47.pages.dev/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-medium"
+                    >
+                        Portfolio
+                    </a>
+                </p>
             </footer>
 
             {/* Toast Notification */}
             {toastMessage && (
-                <div className="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg bg-elevated text-foreground border border-border shadow-lg">
+                <div className="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg bg-elevated text-foreground border border-border shadow-xl text-sm animate-in fade-in slide-in-from-bottom-2">
                     {toastMessage}
                 </div>
             )}
             
+            {/* Mobile Floating Action Button */}
             <FloatingActionButton
                 imagesCount={images.length}
                 selectedCount={selectedIds.size}
