@@ -283,7 +283,11 @@ export function ImageWrangler() {
         });
 
         try {
-            const content = await zip.generateAsync({ type: 'blob' });
+            const content = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 },
+            });
             const url = URL.createObjectURL(content);
             const a = document.createElement('a');
             a.href = url;
@@ -291,7 +295,7 @@ export function ImageWrangler() {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (e) {
             console.error(e);
             showToast(t('toast_zip_failed'));
