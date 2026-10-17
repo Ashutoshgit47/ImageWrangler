@@ -509,21 +509,25 @@ export function ImageWrangler() {
                     {images.length > 0 ? (
                         <div className="space-y-8 mt-6">
                             <div className="flex flex-col gap-4">
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight">
-                                        {t('your_images')} ({images.length})
-                                    </h2>
-                                    {selectedIds.size > 0 && (
-                                        <span className="text-sm text-primary font-medium">
-                                            {selectedIds.size} {t('selected_count')}
-                                        </span>
-                                    )}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight">
+                                            {t('your_images')} ({images.length})
+                                        </h2>
+                                        {selectedIds.size > 0 && (
+                                            <span className="text-xs sm:text-sm text-primary font-medium px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                                                {selectedIds.size} {t('selected_count')}
+                                            </span>
+                                        )}
+                                    </div>
 
                                     {/* Action Bar */}
-                                    <div className="flex flex-wrap items-center sm:ml-auto gap-2">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
                                         <button
                                             onClick={handleSelectAll}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors min-h-[40px]"
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors min-h-[40px] whitespace-nowrap shrink-0"
+                                            title={selectedIds.size === images.length ? t('btn_deselect_all') : t('btn_select_all')}
+                                            aria-label={selectedIds.size === images.length ? t('btn_deselect_all') : t('btn_select_all')}
                                         >
                                             {selectedIds.size === images.length ? <Square className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
                                             <span className="max-sm:hidden">
@@ -533,7 +537,9 @@ export function ImageWrangler() {
                                         <button
                                             onClick={() => handleDownloadIndividual(selectedIds.size > 0)}
                                             disabled={!allDone}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-primary hover:bg-primary-hover text-primary-foreground disabled:opacity-50 transition-colors shadow-sm min-h-[40px]"
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-primary hover:bg-primary-hover text-primary-foreground disabled:opacity-50 transition-colors shadow-sm min-h-[40px] whitespace-nowrap shrink-0"
+                                            title={t('btn_download_all')}
+                                            aria-label={t('btn_download_all')}
                                         >
                                             <FileDown className="h-4 w-4" />
                                             <span className="max-sm:hidden">{t('btn_download_all')}</span>
@@ -541,7 +547,9 @@ export function ImageWrangler() {
                                         <button
                                             onClick={() => handleDownloadZip(selectedIds.size > 0)}
                                             disabled={!allDone || isZipping}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-elevated text-secondary-foreground disabled:opacity-50 transition-colors min-h-[40px]"
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-elevated text-secondary-foreground disabled:opacity-50 transition-colors min-h-[40px] whitespace-nowrap shrink-0"
+                                            title={isZipping ? t('zipping') : t('btn_zip_all')}
+                                            aria-label={isZipping ? t('zipping') : t('btn_zip_all')}
                                         >
                                             <FolderDown className="h-4 w-4" />
                                             <span className="max-sm:hidden">{isZipping ? t('zipping') : t('btn_zip_all')}</span>
@@ -549,14 +557,18 @@ export function ImageWrangler() {
                                         <button
                                             onClick={handleMergeAll}
                                             disabled={images.length < 2 || isZipping}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-accent hover:bg-accent-soft text-accent-foreground disabled:opacity-50 transition-colors min-h-[40px]"
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-accent hover:bg-accent-soft text-accent-foreground disabled:opacity-50 transition-colors min-h-[40px] whitespace-nowrap shrink-0"
+                                            title={t('btn_merge_all')}
+                                            aria-label={t('btn_merge_all')}
                                         >
                                             <Layers className="h-4 w-4" />
                                             <span className="max-sm:hidden">{t('btn_merge_all')}</span>
                                         </button>
                                         <button
                                             onClick={selectedIds.size > 0 ? handleClearSelected : handleClearAll}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-destructive hover:bg-destructive-hover text-destructive-foreground transition-colors min-h-[40px]"
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-destructive hover:bg-destructive-hover text-destructive-foreground transition-colors min-h-[40px] whitespace-nowrap shrink-0"
+                                            title={selectedIds.size > 0 ? t('btn_clear_selected') : t('btn_clear_all')}
+                                            aria-label={selectedIds.size > 0 ? t('btn_clear_selected') : t('btn_clear_all')}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                             <span className="max-sm:hidden">{selectedIds.size > 0 ? t('btn_clear_selected') : t('btn_clear_all')}</span>

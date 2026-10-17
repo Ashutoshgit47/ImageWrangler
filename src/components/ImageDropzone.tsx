@@ -133,7 +133,7 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
     return (
         <div
             className={cn(
-                "relative flex flex-col items-center justify-center w-full p-8 lg:p-10 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 ease-in-out transform",
+                "relative flex flex-col items-center justify-center w-full p-6 sm:p-8 lg:p-10 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 ease-in-out transform",
                 isDragging
                     ? "border-primary bg-primary/10 scale-[1.02] shadow-lg"
                     : "border-border/50 hover:border-primary/50 hover:bg-muted/30 hover:scale-[1.01]"
@@ -162,23 +162,23 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
                 }}
                 aria-hidden="true"
             />
-            <div className="flex flex-col items-center justify-center text-center space-y-5 animate-in fade-in zoom-in duration-500">
+            <div className="flex flex-col items-center justify-center text-center space-y-4 sm:space-y-5 animate-in fade-in zoom-in duration-500">
                 <div className={cn(
-                    "p-4 rounded-full bg-card ring-1 ring-border/50 transition-all duration-300",
+                    "p-3.5 sm:p-4 rounded-full bg-card ring-1 ring-border/50 transition-all duration-300",
                     isDragging ? "bg-primary/10 ring-primary/50 scale-110" : ""
                 )}>
                     <UploadCloud
                         className={cn(
-                            "w-10 h-10 text-muted-foreground transition-colors duration-300",
+                            "w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground transition-colors duration-300",
                             isDragging && "text-primary"
                         )}
                     />
                 </div>
                 <div>
-                    <p className="font-display text-2xl font-medium tracking-tight mb-1">
+                    <p className="font-display text-xl sm:text-2xl font-medium tracking-tight mb-1">
                         {t('dropzone_title')}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                         {t('dropzone_subtitle')}
                     </p>
                 </div>

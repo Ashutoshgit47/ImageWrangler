@@ -97,28 +97,28 @@ export function Header() {
                 isVisible ? "translate-y-0" : "-translate-y-full"
             )}
         >
-            <div className="container mx-auto flex h-14 items-center justify-between px-4">
+            <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:px-4">
                 {/* Brand */}
-                <a href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-                    <img src="/favicon.svg" alt="ImageWrangler Logo" className="h-7 w-7 rounded-lg" />
-                    <span className="font-sans text-lg font-bold tracking-tight text-foreground">
+                <a href="/" className="flex items-center gap-2 sm:gap-2.5 hover:opacity-90 transition-opacity">
+                    <img src="/favicon.svg" alt="ImageWrangler Logo" className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg" />
+                    <span className="font-sans text-base sm:text-lg font-bold tracking-tight text-foreground">
                         Image<span className="text-primary">Wrangler</span>
                     </span>
                 </a>
 
                 {/* Navigation actions */}
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-2.5">
                     {/* Theme Toggle */}
                     <button
                         onClick={toggleTheme}
-                        className="flex items-center justify-center p-2 rounded-md border border-border bg-card hover:bg-elevated text-foreground transition-colors"
+                        className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-elevated text-foreground transition-colors"
                         aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
                         title={isDark ? "Switch to light theme" : "Switch to dark theme"}
                     >
                         {isDark ? (
-                            <Sun className="h-3.5 w-3.5 text-primary" />
+                            <Sun className="h-4 w-4 text-primary" />
                         ) : (
-                            <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Moon className="h-4 w-4 text-muted-foreground" />
                         )}
                     </button>
 
@@ -126,7 +126,7 @@ export function Header() {
                     <div className="relative" ref={langMenuRef}>
                         <button
                             onClick={() => setIsLangOpen(!isLangOpen)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-card hover:bg-elevated text-xs font-medium transition-colors"
+                            className="h-9 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md border border-border bg-card hover:bg-elevated text-xs font-medium transition-colors"
                             aria-expanded={isLangOpen}
                             aria-label="Select language"
                         >
@@ -149,7 +149,7 @@ export function Header() {
                                                 setIsLangOpen(false);
                                             }}
                                             className={cn(
-                                                "w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs text-left transition-colors",
+                                                "w-full flex items-center justify-between px-2.5 py-2 min-h-[36px] rounded text-xs text-left transition-colors",
                                                 currentLocale === loc.code
                                                     ? "bg-primary text-primary-foreground font-semibold"
                                                     : "hover:bg-elevated text-foreground"
@@ -171,10 +171,10 @@ export function Header() {
                         href="https://github.com/Ashutoshgit47/ImageWrangler"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors"
+                        className="h-9 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md text-xs font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors"
                         title="GitHub Repository"
                     >
-                        <Github className="h-3.5 w-3.5" />
+                        <Github className="h-4 w-4" />
                         <span className="hidden sm:inline">GitHub</span>
                     </a>
                 </div>

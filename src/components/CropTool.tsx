@@ -81,10 +81,10 @@ export function CropTool({
     useEffect(() => {
         const updateScale = () => {
             if (containerRef.current && originalWidth > 0 && originalHeight > 0) {
-                const containerWidth = containerRef.current.clientWidth - 32;
-                const maxHeight = window.innerHeight * 0.55;
+                const containerWidth = Math.max(100, containerRef.current.clientWidth - 24);
+                const containerHeight = Math.max(100, (containerRef.current.clientHeight || (window.innerHeight * 0.5)) - 24);
                 const scaleX = containerWidth / originalWidth;
-                const scaleY = maxHeight / originalHeight;
+                const scaleY = containerHeight / originalHeight;
                 setDisplayScale(Math.min(scaleX, scaleY, 1));
             }
         };
@@ -386,26 +386,26 @@ export function CropTool({
 
     return (
         <div className="fixed inset-0 z-50 bg-accent/90 flex items-center justify-center p-2 sm:p-4">
-            <div className="bg-card rounded-lg w-full max-w-3xl max-h-[95vh] overflow-hidden flex flex-col">
+            <div className="bg-card rounded-xl w-full max-w-3xl max-h-[92dvh] max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-border">
                 {/* Header */}
-                <div className="flex items-center justify-between p-3 border-b border-border">
+                <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border shrink-0">
                     <h3 className="font-display text-lg font-medium">{t('crop_title')}</h3>
-                    <button onClick={onCancel} className="p-1 rounded hover:bg-elevated" aria-label={t('crop_cancel')}>
+                    <button onClick={onCancel} className="p-1.5 rounded-md hover:bg-elevated transition-colors text-muted-foreground hover:text-foreground" aria-label={t('crop_cancel')}>
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                {/* Aspect Ratio Buttons */}
-                <div className="flex flex-wrap gap-1 p-2 border-b border-border bg-elevated">
+                {/* Aspect Ratio Buttons - Horizontally scrollable on small screens, wrapped on desktop */}
+                <div className="flex items-center gap-1.5 p-2 sm:p-2.5 border-b border-border bg-elevated overflow-x-auto no-scrollbar sm:flex-wrap shrink-0">
                     {ASPECT_RATIOS.map((ar) => (
                         <button
                             key={ar.label}
                             onClick={() => applyAspectRatio(ar.value)}
                             className={cn(
-                                "px-2 py-1 text-xs rounded transition-colors",
+                                "px-3 py-1.5 min-h-[36px] text-xs font-medium rounded-md whitespace-nowrap transition-colors shrink-0",
                                 aspectRatio === ar.value
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-background hover:bg-muted border border-border"
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "bg-background hover:bg-muted border border-border text-foreground"
                             )}
                         >
                             {ar.labelKey ? t(ar.labelKey as any) : ar.label}
@@ -413,9 +413,9 @@ export function CropTool({
                     ))}
                     <button
                         onClick={resetCrop}
-                        className="px-2 py-1 text-xs rounded bg-background hover:bg-muted border border-border flex items-center gap-1"
+                        className="px-3 py-1.5 min-h-[36px] text-xs font-medium rounded-md bg-background hover:bg-muted border border-border flex items-center gap-1.5 whitespace-nowrap shrink-0 text-foreground"
                     >
-                        <RotateCcw className="h-3 w-3" />
+                        <RotateCcw className="h-3.5 w-3.5" />
                         {t('crop_reset')}
                     </button>
                 </div>
@@ -531,20 +531,20 @@ export function CropTool({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-3 border-t border-border">
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-center justify-between p-3 sm:p-4 border-t border-border shrink-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground font-mono">
                         {Math.round(crop.width)} × {Math.round(crop.height)} px
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                         <button
                             onClick={onCancel}
-                            className="px-3 py-1.5 text-sm rounded border border-border bg-background hover:bg-elevated transition-colors"
+                            className="px-3.5 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-md border border-border bg-background hover:bg-elevated transition-colors text-foreground"
                         >
                             {t('crop_cancel')}
                         </button>
                         <button
                             onClick={handleSave}
-                            className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
+                            className="px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary-hover transition-colors shadow-sm"
                         >
                             {t('crop_apply')}
                         </button>
