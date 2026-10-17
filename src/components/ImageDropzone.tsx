@@ -26,6 +26,20 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // A drop that lands outside the dropzone would otherwise make the browser
+    // navigate to the dropped file and discard the current session.
+    useEffect(() => {
+        const preventNavigation = (e: DragEvent) => {
+            if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+        };
+        window.addEventListener('dragover', preventNavigation);
+        window.addEventListener('drop', preventNavigation);
+        return () => {
+            window.removeEventListener('dragover', preventNavigation);
+            window.removeEventListener('drop', preventNavigation);
+        };
+    }, []);
+
     const handleFiles = useCallback(async (files: FileList | File[] | null) => {
         if (!files || files.length === 0) return;
 

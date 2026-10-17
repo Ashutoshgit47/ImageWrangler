@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ImageFile, ProcessOptions, CropRegion } from '../lib/types';
 import { formatBytes, cn } from '../lib/utils';
+import { sanitizeFilename } from '../lib/fileValidation';
 import { useTranslation } from '../lib/i18n';
 import { CropTool } from './CropTool';
 import {
@@ -201,7 +202,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                 <div className="relative w-full aspect-video bg-elevated overflow-hidden my-2.5">
                     <img
                         src={image.previewUrl}
-                        alt={`Preview of ${image.file.name}`}
+                        alt={`${t('preview')}: ${image.file.name}`}
                         className="absolute inset-0 w-full h-full object-contain"
                     />
                     {image.options.crop && (
@@ -312,7 +313,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                         aria-checked={image.options.keepAspectRatio}
                                         onClick={() => handleOptionChange('keepAspectRatio', !image.options.keepAspectRatio)}
                                         className={cn(
-                                            "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                                            "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors after:absolute after:-inset-3 after:content-['']",
                                             image.options.keepAspectRatio ? "bg-primary" : "bg-border"
                                         )}
                                     >
@@ -398,7 +399,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                     const ext = image.options.format === 'jpeg' ? 'jpg' : image.options.format;
                                     const a = document.createElement('a');
                                     a.href = image.processedUrl;
-                                    a.download = `${originalName}.${ext}`;
+                                    a.download = `${sanitizeFilename(originalName)}.${ext}`;
                                     document.body.appendChild(a);
                                     a.click();
                                     document.body.removeChild(a);

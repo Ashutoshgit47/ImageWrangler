@@ -123,7 +123,7 @@ export function Header() {
                             onClick={() => setIsLangOpen(!isLangOpen)}
                             className="h-10 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md border border-border bg-card hover:bg-elevated text-xs font-medium transition-colors"
                             aria-expanded={isLangOpen}
-                            aria-label="Select language"
+                            aria-label={t('select_language')}
                         >
                             <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="hidden sm:inline">{activeLocaleObj.nativeName}</span>
@@ -133,7 +133,7 @@ export function Header() {
                         {isLangOpen && (
                             <div className="absolute right-0 mt-1.5 w-40 rounded-lg border border-border bg-card shadow-xl p-1 z-50">
                                 <div className="text-[10px] font-semibold text-muted-foreground px-2.5 py-1 uppercase tracking-wider">
-                                    Language
+                                    {t('select_language')}
                                 </div>
                                 <div className="max-h-60 overflow-y-auto space-y-0.5">
                                     {locales.map(loc => (
