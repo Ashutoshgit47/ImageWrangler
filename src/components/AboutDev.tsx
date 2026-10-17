@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from '../lib/i18n';
-import { Github, Globe, Heart, ShieldCheck, Cpu, Code2, ExternalLink } from 'lucide-react';
+import { Github, Globe, Heart, ShieldCheck, Cpu, Code2, ExternalLink, Coffee } from 'lucide-react';
 
 export function AboutDev() {
     const { t } = useTranslation();
@@ -88,11 +88,23 @@ export function AboutDev() {
                         <span>{t('about_dev_support')}</span>
                     </p>
                     <div className="flex items-center gap-3 flex-wrap justify-center">
-                        <a href="https://ko-fi.com/Y8Y11V9RQ2" target="_blank" rel="noopener noreferrer" className="hover:opacity-90 transition-opacity">
-                            <img height="32" style={{ border: '0px', height: '32px' }} src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee at ko-fi.com" />
+                        <a
+                            href="https://ko-fi.com/ashutosh47"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#18181b] hover:bg-[#27272a] text-[#ff5e5b] border border-[#ff5e5b]/40 hover:border-[#ff5e5b] transition-all duration-200 shadow-sm hover:scale-105"
+                        >
+                            <Coffee className="w-3.5 h-3.5 text-[#ff5e5b]" />
+                            <span>Ko-fi</span>
                         </a>
-                        <a href="https://buymeachai.ezee.li/ashutosh47" target="_blank" rel="noopener noreferrer" className="hover:opacity-90 transition-opacity">
-                            <img src="https://buymeachai.ezee.li/assets/images/buymeachai-button.png" alt="Buy Me A Chai" style={{ height: '32px', width: 'auto' }} />
+                        <a
+                            href="https://buymeachai.ezee.li/ashutosh47"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#18181b] hover:bg-[#27272a] text-amber-400 border border-amber-500/40 hover:border-amber-400 transition-all duration-200 shadow-sm hover:scale-105"
+                        >
+                            <Coffee className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Buy Me A Chai</span>
                         </a>
                     </div>
                 </div>

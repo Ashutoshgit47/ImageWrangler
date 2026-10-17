@@ -160,9 +160,8 @@ export async function processImage(file: File, options: ProcessOptions): Promise
       // Fast-path: if max quality already fits, return immediately
       const maxAttempt = await safeConvertToBlob(canvas, mimeType, maxQ);
       if (maxAttempt.size <= targetBytes) {
-        // Size guard: if the max quality output is inexplicably larger than the original,
-        // AND the original already fit within the target, just use the original.
-        if (maxAttempt.size > file.size && file.size <= targetBytes) {
+        // Size guard: only return original if user made no geometry or format edits
+        if (!isResized && !isCropped && !isFormatChanged && maxAttempt.size > file.size && file.size <= targetBytes) {
           return file;
         }
         return maxAttempt;
@@ -193,11 +192,9 @@ export async function processImage(file: File, options: ProcessOptions): Promise
 
     const blob = await safeConvertToBlob(canvas, mimeType, quality);
 
-    // Size guard: never return a result larger than the original file.
-    // HTML Canvas encoders are often less efficient than the original file's
-    // compression, causing silent bloat. If we can't beat the original size,
-    // just return the original file to save bandwidth.
-    if (blob.size > file.size) {
+    // Size guard: only return original file if user did NOT resize, crop, or change format.
+    // If user edited geometry or format, returning the original file corrupts their changes!
+    if (!isResized && !isCropped && !isFormatChanged && blob.size > file.size) {
       return file;
     }
 

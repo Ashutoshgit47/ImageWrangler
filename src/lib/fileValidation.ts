@@ -10,10 +10,7 @@ import { type ValidationResult, SecurityConstants } from './types';
 /** Magic byte signatures for supported image formats */
 const FILE_SIGNATURES: Record<string, number[][]> = {
     'image/jpeg': [
-        [0xFF, 0xD8, 0xFF, 0xE0],  // JFIF
-        [0xFF, 0xD8, 0xFF, 0xE1],  // E1
-        [0xFF, 0xD8, 0xFF, 0xE8],  // SPIFF
-        [0xFF, 0xD8, 0xFF, 0xDB],  // RAW
+        [0xFF, 0xD8, 0xFF],  // JPEG SOI marker + marker prefix
     ],
     'image/png': [
         [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],  // PNG signature
@@ -64,7 +61,7 @@ async function isWebP(file: File): Promise<boolean> {
  * Special check for AVIF format (ISOBMFF with 'ftyp' at offset 4 and 'avif'/'avis' brand)
  */
 async function isAVIF(file: File): Promise<boolean> {
-    const header = await readFileHeader(file, 32);
+    const header = await readFileHeader(file, 64);
     if (header.length < 12) return false;
     const isFtyp = header[4] === 0x66 && header[5] === 0x74 &&
         header[6] === 0x79 && header[7] === 0x70;
@@ -78,29 +75,58 @@ async function isAVIF(file: File): Promise<boolean> {
 }
 
 /**
- * Safely check dimensions using ImageBitmap without full decode overhead if possible,
- * or strictly limit decode if not.
+ * Safely check dimensions using ImageBitmap or HTMLImageElement fallback
+ * Enforces strict decompression bomb limits.
  */
 async function checkDimensions(file: File): Promise<boolean> {
     try {
-        // createImageBitmap is optimized, but we must close it immediately
-        const bitmap = await createImageBitmap(file);
-        const { width, height } = bitmap;
-        bitmap.close();
+        if (typeof createImageBitmap !== 'undefined') {
+            try {
+                const bitmap = await createImageBitmap(file);
+                const { width, height } = bitmap;
+                bitmap.close();
 
-        if (width > SecurityConstants.MAX_WIDTH || height > SecurityConstants.MAX_HEIGHT) {
-            console.warn(`Image dimensions ${width}x${height} exceed limit ${SecurityConstants.MAX_WIDTH}x${SecurityConstants.MAX_HEIGHT}`);
-            return false;
+                if (width > SecurityConstants.MAX_WIDTH || height > SecurityConstants.MAX_HEIGHT) {
+                    console.warn(`Image dimensions ${width}x${height} exceed limit ${SecurityConstants.MAX_WIDTH}x${SecurityConstants.MAX_HEIGHT}`);
+                    return false;
+                }
+
+                if (width * height > SecurityConstants.MAX_PIXELS) {
+                    console.warn(`Total pixels ${width * height} exceed limit ${SecurityConstants.MAX_PIXELS}`);
+                    return false;
+                }
+
+                return true;
+            } catch {
+                // Fallback to HTMLImageElement below if createImageBitmap fails
+            }
         }
 
-        if (width * height > SecurityConstants.MAX_PIXELS) {
-            console.warn(`Total pixels ${width * height} exceed limit ${SecurityConstants.MAX_PIXELS}`);
-            return false;
+        if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
+            return new Promise((resolve) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    const { naturalWidth: width, naturalHeight: height } = img;
+                    if (width > SecurityConstants.MAX_WIDTH || height > SecurityConstants.MAX_HEIGHT) {
+                        resolve(false);
+                    } else if (width * height > SecurityConstants.MAX_PIXELS) {
+                        resolve(false);
+                    } else {
+                        resolve(true);
+                    }
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(false);
+                };
+                img.src = url;
+            });
         }
 
         return true;
     } catch {
-        // If we can't read dimensions, we can't ensure safety
         return false;
     }
 }
@@ -166,9 +192,9 @@ export async function validateImageFile(file: File): Promise<ValidationResult> {
         return { isValid: false, error: `File size exceeds limit of ${SecurityConstants.MAX_FILE_SIZE / 1024 / 1024}MB` };
     }
 
-    // 3. Check MIME type (reject unlikely non-images immediately)
-    if (!file.type.startsWith('image/')) {
-        return { isValid: false, error: `Invalid MIME type: ${file.type || 'unknown'}` };
+    // 3. Check MIME type (if declared, reject non-images immediately)
+    if (file.type && !file.type.startsWith('image/')) {
+        return { isValid: false, error: `Invalid MIME type: ${file.type}` };
     }
 
     // 4. Detect actual file type from signature (Magic Bytes)
@@ -200,7 +226,7 @@ export async function validateImageFile(file: File): Promise<ValidationResult> {
  * Quick validation - only checks if it looks like an image and isn't huge
  */
 export async function quickValidateImage(file: File): Promise<boolean> {
-    if (!file.type.startsWith('image/') || file.size === 0 || file.size > SecurityConstants.MAX_FILE_SIZE) {
+    if ((file.type && !file.type.startsWith('image/')) || file.size === 0 || file.size > SecurityConstants.MAX_FILE_SIZE) {
         return false;
     }
     return (await detectImageType(file)) !== null;
