@@ -128,9 +128,10 @@ function enqueueJob(
     reject: (error: Error) => void
 ) {
     const job = () => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
         try {
             const w = getWorker();
-            const timer = setTimeout(() => {
+            timer = setTimeout(() => {
                 console.warn(`Worker job ${message.id} (${message.type}) timed out after ${JOB_TIMEOUT_MS}ms`);
                 resetWorker(new Error(
                     message.type === 'VALIDATE' ? 'Image validation timed out' : 'Image processing timed out'
@@ -140,6 +141,10 @@ function enqueueJob(
             pendingOperations.set(message.id, { resolve, reject, timer });
             w.postMessage(message); // Heavy payload transfer happens here
         } catch (err) {
+            // Clean up the watchdog + pending entry first: a failed postMessage must not
+            // leave a stale 60s timer behind that later kills unrelated in-flight jobs.
+            if (timer) clearTimeout(timer);
+            pendingOperations.delete(message.id);
             activeJobs--; // Revert slot if synchronous fail (e.g. clone error)
             reject(err instanceof Error ? err : new Error(String(err)));
             processNextJob();

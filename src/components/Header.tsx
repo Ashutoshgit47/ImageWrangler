@@ -131,7 +131,7 @@ export function Header() {
                         </button>
 
                         {isLangOpen && (
-                            <div className="absolute right-0 mt-1.5 w-40 rounded-lg border border-border bg-card shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="absolute right-0 mt-1.5 w-40 rounded-lg border border-border bg-card shadow-xl p-1 z-50">
                                 <div className="text-[10px] font-semibold text-muted-foreground px-2.5 py-1 uppercase tracking-wider">
                                     Language
                                 </div>

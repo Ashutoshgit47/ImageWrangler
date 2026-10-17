@@ -45,6 +45,41 @@ function getCanvasContext(canvas: OffscreenCanvas | HTMLCanvasElement): CanvasRe
   return canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
 }
 
+// BMP buffers are uncompressed (54 B header + 3 B/pixel + row padding) and copied
+// again into the Blob, so cap the output to keep peak memory manageable on mobile.
+const MAX_BMP_PIXELS = 16_000_000;
+
+let maxCanvasSide: number | null = null;
+
+/** Draw a 1px dot on a canvas of the given width and read it back. */
+function probeCanvasSide(size: number): boolean {
+  try {
+    const probe = createCanvas(size, 1);
+    const ctx = getCanvasContext(probe);
+    if (!ctx) return false;
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(0, 0, 1, 1);
+    const px = ctx.getImageData(0, 0, 1, 1).data;
+    return px[3] === 255 && px[0] === 255;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Largest canvas side this runtime can actually render.
+ * Safari ≤ 17 silently no-ops drawImage on canvases wider/taller than 4096px
+ * (its 16.7 MP area cap follows from that), which would export a blank image.
+ */
+function getMaxCanvasSide(): number {
+  if (maxCanvasSide === null) {
+    maxCanvasSide = probeCanvasSide(4097)
+      ? (probeCanvasSide(8193) ? SecurityConstants.MAX_WIDTH : 8192)
+      : 4096;
+  }
+  return maxCanvasSide;
+}
+
 /**
  * Process an image file with the given options
  * Uses OffscreenCanvas for worker compatibility
@@ -106,6 +141,11 @@ export async function processImage(file: File, options: ProcessOptions): Promise
       throw new Error(`Output dimensions exceed safety limit (${Math.round(SecurityConstants.MAX_PIXELS / 1_000_000)} MP).`);
     }
 
+    const maxSide = getMaxCanvasSide();
+    if (targetWidth > maxSide || targetHeight > maxSide) {
+      throw new Error(`Your browser cannot render images wider or taller than ${maxSide}px. Reduce the output size.`);
+    }
+
     const canvas = createCanvas(targetWidth, targetHeight);
     const ctx = getCanvasContext(canvas);
 
@@ -133,7 +173,9 @@ export async function processImage(file: File, options: ProcessOptions): Promise
 
     if (options.format === 'bmp') {
       // BMP is uncompressed — output is always larger than JPEG/PNG source by design.
-      // No size guard here; user explicitly chose BMP.
+      if (targetWidth * targetHeight > MAX_BMP_PIXELS) {
+        throw new Error(`BMP export is limited to ${MAX_BMP_PIXELS / 1_000_000} MP to avoid running out of memory. Choose JPEG, WebP, or PNG for large images.`);
+      }
       const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
       return encodeBMP(imageData);
     }
@@ -236,8 +278,14 @@ export async function mergeImages(files: (File | Blob)[]): Promise<Blob> {
     let canvasWidth = cellW * cols;
     let canvasHeight = cellH * rows;
 
-    if (canvasWidth * canvasHeight > MAX_MERGE_PIXELS) {
-      const scale = Math.sqrt(MAX_MERGE_PIXELS / (canvasWidth * canvasHeight));
+    const maxSide = getMaxCanvasSide();
+    if (canvasWidth * canvasHeight > MAX_MERGE_PIXELS || canvasWidth > maxSide || canvasHeight > maxSide) {
+      // Fit under the area cap and the runtime's max canvas side
+      const scale = Math.min(
+        Math.sqrt(MAX_MERGE_PIXELS / (canvasWidth * canvasHeight)),
+        maxSide / canvasWidth,
+        maxSide / canvasHeight
+      );
       cellW = Math.max(1, Math.floor(maxCellW * scale));
       cellH = Math.max(1, Math.floor(maxCellH * scale));
       canvasWidth = cellW * cols;

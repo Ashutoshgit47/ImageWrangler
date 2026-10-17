@@ -162,7 +162,7 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
                 }}
                 aria-hidden="true"
             />
-            <div className="flex flex-col items-center justify-center text-center space-y-4 sm:space-y-5 animate-in fade-in zoom-in duration-500">
+            <div className="flex flex-col items-center justify-center text-center space-y-4 sm:space-y-5">
                 <div className={cn(
                     "p-3.5 sm:p-4 rounded-full bg-card ring-1 ring-border/50 transition-all duration-300",
                     isDragging ? "bg-primary/10 ring-primary/50 scale-110" : ""

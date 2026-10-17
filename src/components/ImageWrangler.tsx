@@ -390,7 +390,8 @@ export function ImageWrangler() {
 
         imagesToDownload.forEach((image, index) => {
             setTimeout(() => {
-                if (image.processedUrl) {
+                // Skip if the image was removed or re-processed in the meantime (URL revoked)
+                if (image.processedUrl && objectUrls.current.has(image.processedUrl)) {
                     const a = document.createElement('a');
                     a.href = image.processedUrl;
                     a.download = uniqueOutputName(
@@ -625,7 +626,11 @@ export function ImageWrangler() {
 
             {/* Toast Notification */}
             {toastMessage && (
-                <div className="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg bg-elevated text-foreground border border-border shadow-xl text-sm animate-in fade-in slide-in-from-bottom-2">
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg bg-elevated text-foreground border border-border shadow-xl text-sm"
+                >
                     {toastMessage}
                 </div>
             )}

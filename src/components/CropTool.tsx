@@ -77,6 +77,13 @@ export function CropTool({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onCancel]);
 
+    // Cancel a pending drag frame if the modal unmounts mid-drag
+    useEffect(() => {
+        return () => {
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, []);
+
     // Calculate display scale to fit image in container
     useEffect(() => {
         const updateScale = () => {
@@ -385,7 +392,7 @@ export function CropTool({
     const edgeClass = "absolute bg-transparent touch-none";
 
     return (
-        <div className="fixed inset-0 z-50 bg-accent/90 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-accent/90 flex items-center justify-center p-2 sm:p-4 touch-none">
             <div className="bg-card rounded-xl w-full max-w-3xl max-h-crop overflow-hidden flex flex-col shadow-2xl border border-border">
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border shrink-0">

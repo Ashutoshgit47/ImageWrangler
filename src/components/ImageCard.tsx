@@ -240,7 +240,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                             <label
                                 htmlFor={`quality-${image.id}`}
                                 className={cn("text-xs font-medium", !isQualityEffective && "text-muted-foreground")}
-                                title={image.options.targetSizeKB ? 'Quality is auto-adjusted by Target KB' : undefined}
+                                title={image.options.targetSizeKB ? t('quality_auto_hint') : undefined}
                             >
                                 {t('quality')}: {image.options.quality}
                                 {image.options.targetSizeKB ? <span className="ml-1 text-[10px] text-primary">({t('quality_auto')})</span> : null}
@@ -255,7 +255,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                 onChange={(e) => handleOptionChange('quality', parseInt(e.target.value, 10))}
                                 disabled={!isQualityEffective}
                                 className="w-full h-8 accent-primary disabled:opacity-50"
-                                title={image.options.targetSizeKB ? 'Quality is auto-adjusted by Target KB' : undefined}
+                                title={image.options.targetSizeKB ? t('quality_auto_hint') : undefined}
                             />
                         </div>
                     </div>
@@ -438,7 +438,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
             {/* Preview Modal */}
             {showPreview && (
                 <div
-                    className="fixed inset-0 z-50 bg-accent/80 flex items-center justify-center p-3 sm:p-4"
+                    className="fixed inset-0 z-50 bg-accent/80 flex items-center justify-center p-3 sm:p-4 touch-none"
                     onClick={() => setShowPreview(false)}
                     role="dialog"
                     aria-modal="true"
@@ -450,16 +450,16 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                             <button
                                 onClick={() => setShowPreview(false)}
                                 className="p-2.5 hover:bg-elevated rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                aria-label={t('crop_cancel')}
+                                aria-label={t('close')}
                             >
                                 <XCircle className="h-5 w-5" />
                             </button>
                         </div>
-                        <div className="overflow-y-auto max-h-preview-body p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="overflow-y-auto overscroll-contain max-h-preview-body p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <h4 className="font-display text-base font-medium mb-2 text-center">{t('original')} ({formatBytes(image.file.size)})</h4>
                                 <div className="relative w-full aspect-video bg-elevated rounded-md overflow-hidden">
-                                    <img src={image.previewUrl} alt="Before" className="absolute inset-0 w-full h-full object-contain" />
+                                    <img src={image.previewUrl} alt={t('preview_before')} className="absolute inset-0 w-full h-full object-contain" />
                                 </div>
                             </div>
                             <div>
@@ -467,7 +467,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                     {image.processedFile ? `${t('processed')} (${formatBytes(image.processedFile.size)})` : t('unchanged')}
                                 </h4>
                                 <div className="relative w-full aspect-video bg-elevated rounded-md overflow-hidden">
-                                    <img src={image.processedUrl || image.previewUrl} alt="After" className="absolute inset-0 w-full h-full object-contain" />
+                                    <img src={image.processedUrl || image.previewUrl} alt={t('preview_after')} className="absolute inset-0 w-full h-full object-contain" />
                                 </div>
                             </div>
                         </div>

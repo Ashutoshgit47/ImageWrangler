@@ -18,6 +18,7 @@ const {
 } = Astro.props;
 
 const appUrl = Astro.site?.href ?? "https://imagewrangler.pages.dev/";
+const ogImageUrl = new URL("og-image.png", appUrl).href;
 
 // FAQ Schema for SEO — mirrors the visible FAQ section
 const faqSchema = {
@@ -37,7 +38,7 @@ const faqSchema = {
       name: "Which image formats are supported?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "You can convert across AVIF, WebP, JPEG, PNG, and BMP. You can also import animated GIFs (which export as static first frames).",
+        text: "You can import and convert across AVIF, WebP, JPEG, PNG, and BMP.",
       },
     },
     {
@@ -152,11 +153,16 @@ const faqSchema = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="ImageWrangler" />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ImageWrangler — compress, resize & convert images offline" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

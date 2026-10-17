@@ -123,7 +123,7 @@ export function FloatingActionButton({
   return (
     <div ref={fabRef} className="fixed bottom-6 left-6 z-50 flex flex-col-reverse items-start gap-3">
       {isOpen && (
-        <div className="flex flex-col gap-2 mb-2 animate-in slide-in-from-bottom-2 duration-200">
+        <div className="flex flex-col gap-2 mb-2">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             return (
@@ -137,7 +137,6 @@ export function FloatingActionButton({
                   'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
                   item.colorClass
                 )}
-                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="whitespace-nowrap">{item.label}</span>
@@ -155,7 +154,7 @@ export function FloatingActionButton({
           'hover:bg-primary-hover hover:shadow-xl hover:scale-110 active:scale-95',
           'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background'
         )}
-        aria-label={isOpen ? 'Close menu' : 'Open actions menu'}
+        aria-label={isOpen ? t('fab_close') : t('fab_open')}
         aria-expanded={isOpen}
       >
         <Plus className={cn('h-5 w-5 transition-transform duration-300', isOpen && 'rotate-45')} />
