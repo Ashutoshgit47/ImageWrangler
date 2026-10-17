@@ -137,6 +137,9 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
     };
 
     const estimatedSize = image.processedFile ? formatBytes(image.processedFile.size) : '...';
+    const savingsPercent = (image.processedFile && image.file.size > 0)
+        ? Math.round(((image.processedFile.size - image.file.size) / image.file.size) * 100)
+        : null;
     // AVIF is lossy and supports quality & weight targeting
     const isQualitySupported = image.options.format === 'jpeg' || image.options.format === 'webp' || image.options.format === 'avif';
     const isQualityEffective = isQualitySupported && !image.options.targetSizeKB;
@@ -370,8 +373,18 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
 
                 {/* Footer */}
                 <div className="flex items-center justify-between px-3 py-3 border-t border-border">
-                    <p className="text-xs font-medium">
-                        {formatBytes(image.file.size)} <span className="text-muted-foreground mx-1">→</span> <span className="text-primary">{estimatedSize}</span>
+                    <p className="text-xs font-medium flex items-center flex-wrap">
+                        <span>{formatBytes(image.file.size)}</span>
+                        <span className="text-muted-foreground mx-1">→</span>
+                        <span className="text-primary font-semibold">{estimatedSize}</span>
+                        {savingsPercent !== null && (
+                            <span className={cn(
+                                "ml-1.5 text-[10px] font-semibold",
+                                savingsPercent < 0 ? "text-emerald-500" : "text-muted-foreground"
+                            )}>
+                                ({savingsPercent <= 0 ? `${savingsPercent}%` : `+${savingsPercent}%`})
+                            </span>
+                        )}
                     </p>
                     <div className="flex items-center gap-2">
                         <button

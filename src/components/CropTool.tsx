@@ -325,7 +325,11 @@ export function CropTool({
                     newHeight = newWidth / ratio;
                 }
 
-                return { ...prev, width: newWidth, height: newHeight };
+                return {
+                    ...prev,
+                    width: Math.max(50, Math.round(newWidth)),
+                    height: Math.max(50, Math.round(newHeight)),
+                };
             });
         }
     };

@@ -228,11 +228,17 @@ export async function mergeImages(files: (File | Blob)[]): Promise<Blob> {
     const maxCellW = Math.max(...bitmaps.map(b => b.width));
     const maxCellH = Math.max(...bitmaps.map(b => b.height));
 
-    const canvasWidth = maxCellW * cols;
-    const canvasHeight = maxCellH * rows;
+    let cellW = maxCellW;
+    let cellH = maxCellH;
+    let canvasWidth = cellW * cols;
+    let canvasHeight = cellH * rows;
 
     if (canvasWidth * canvasHeight > MAX_MERGE_PIXELS) {
-      throw new Error(`Merged image size (${canvasWidth}x${canvasHeight}) exceeds safety limits.`);
+      const scale = Math.sqrt(MAX_MERGE_PIXELS / (canvasWidth * canvasHeight));
+      cellW = Math.max(1, Math.floor(maxCellW * scale));
+      cellH = Math.max(1, Math.floor(maxCellH * scale));
+      canvasWidth = cellW * cols;
+      canvasHeight = cellH * rows;
     }
 
     const canvas = createCanvas(canvasWidth, canvasHeight);
@@ -245,9 +251,16 @@ export async function mergeImages(files: (File | Blob)[]): Promise<Blob> {
     bitmaps.forEach((bmp, index) => {
       const r = Math.floor(index / cols);
       const c = index % cols;
-      const x = c * maxCellW + (maxCellW - bmp.width) / 2;
-      const y = r * maxCellH + (maxCellH - bmp.height) / 2;
-      ctx.drawImage(bmp, x, y);
+      const aspect = bmp.width / bmp.height;
+      let drawW = cellW;
+      let drawH = Math.round(drawW / aspect);
+      if (drawH > cellH) {
+        drawH = cellH;
+        drawW = Math.round(drawH * aspect);
+      }
+      const x = c * cellW + (cellW - drawW) / 2;
+      const y = r * cellH + (cellH - drawH) / 2;
+      ctx.drawImage(bmp, x, y, drawW, drawH);
     });
 
     const blob = await canvasToBlob(canvas, 'image/jpeg', 0.9);
