@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTranslation, type Locale } from '../lib/i18n';
-import { Globe, Github, User, ChevronDown } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
+import { Github, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function Header() {
@@ -114,15 +114,6 @@ export function Header() {
                             </div>
                         )}
                     </div>
-
-                    {/* About Dev Anchor */}
-                    <a
-                        href="#about-dev"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                    >
-                        <User className="h-3.5 w-3.5" />
-                        <span className="hidden md:inline">{t('nav_about_dev')}</span>
-                    </a>
 
                     {/* GitHub Repo */}
                     <a

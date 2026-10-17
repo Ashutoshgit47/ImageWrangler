@@ -10,7 +10,6 @@ import { ImageDropzone } from './ImageDropzone';
 import { ImageCard } from './ImageCard';
 import { FAQ } from './FAQ';
 import { Header } from './Header';
-import { AboutDev } from './AboutDev';
 import { processImageAsync } from '../lib/workerManager';
 import { mergeImages } from '../lib/imageProcessor';
 import { formatBytes, generateId, cn } from '../lib/utils';
@@ -432,6 +431,15 @@ export function ImageWrangler() {
                             onFilesAdded={handleFilesAdded}
                             onValidationError={handleValidationError}
                         />
+                        {/* Donation Buttons */}
+                        <div className="mt-8 flex flex-row items-center justify-center gap-4 flex-wrap">
+                            <a href="https://ko-fi.com/Y8Y11V9RQ2" target="_blank" rel="noopener noreferrer">
+                                <img height="36" style={{ border: '0px', height: '36px' }} src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee at ko-fi.com" />
+                            </a>
+                            <a href="https://buymeachai.ezee.li/ashutosh47" target="_blank" rel="noopener noreferrer">
+                                <img src="/buymeachai-button.svg" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://buymeachai.ezee.li/assets/images/buymeachai-button.png'; }} alt="Buy Me A Chai" style={{ height: '36px', width: 'auto' }} />
+                            </a>
+                        </div>
                     </div>
 
                     {/* Image Cards & Batch Action Bar */}
@@ -529,39 +537,15 @@ export function ImageWrangler() {
                     )}
                 </div>
 
-                {/* About Developer Section */}
-                <AboutDev />
-
                 {/* Separator */}
-                <hr className="my-12 md:my-16 border-border" />
+                <hr className="my-12 md:my-20 border-border" />
 
                 {/* FAQ Section */}
                 <FAQ />
             </main>
 
-            {/* Footer with Developer attribution */}
-            <footer className="py-8 border-t border-border/60 bg-card/30 text-center text-xs text-muted-foreground space-y-2">
+            <footer className="py-6 text-center text-sm text-muted-foreground">
                 <p>{t('footer_text', { year: new Date().getFullYear() })}</p>
-                <p className="flex items-center justify-center gap-1">
-                    <span>{t('footer_dev')}:</span>
-                    <a
-                        href="https://github.com/Ashutoshgit47"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline font-medium"
-                    >
-                        GitHub
-                    </a>
-                    <span>•</span>
-                    <a
-                        href="https://ashutosh47.pages.dev/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline font-medium"
-                    >
-                        Portfolio
-                    </a>
-                </p>
             </footer>
 
             {/* Toast Notification */}
