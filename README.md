@@ -1,38 +1,60 @@
-# ImageWrangler 
+# ImageWrangler
 
-**Privacy-First, Browser-Based Image Processing & Conversion**
+**Privacy-First, Offline Browser Image Processing & Conversion Suite**
 
-ImageWrangler is a **frontend-only, privacy-preserving** image suite that resizes, crops, compresses, and converts images **entirely in your browser**. No servers. No uploads. No tracking. Built for designers, developers, photographers, and privacy-conscious users.
+ImageWrangler is a **100% client-side, zero-telemetry** image utility that compresses, resizes, crops, and converts images directly inside your browser. No backends, no cloud uploads, no tracking scripts, and no external API dependencies. Built for photographers, designers, developers, and privacy-conscious users.
 
-> 🔒 **Your images never leave your machine.** All processing runs in browser memory via client-side Web Workers and HTML5 Canvas APIs.
-
----
-
-## 🌐 Live Demo
-
-🔗 [https://imagewrangler.pages.dev/](https://imagewrangler.pages.dev/)
+> 🔒 **Privacy Guarantee**: Your photos never leave your device. All decoding, compression, and transformations execute exclusively in volatile browser memory via Web Workers and HTML5 Canvas APIs. Once you close the tab, all memory is freed.
 
 ---
 
-## 🚀 Key Features
+## 🌐 Live Application
 
-### 🛡️ Privacy by Design
-- **100% Client-Side**: No backend, no API keys, no server uploads.
-- **Zero Tracking**: No telemetry, no third-party cookies, no analytics scripts.
-- **In-Memory Operations**: Processed in volatile memory, cleared upon tab closure or one-click reset.
+🔗 **[https://imagewrangler.pages.dev/](https://imagewrangler.pages.dev/)**
 
-### 🖼️ Advanced Image Processing
-- **Format Conversion**: Convert across **JPEG**, **PNG**, **WebP**, **AVIF**, and **BMP**.
-- **AVIF Next-Gen Format**: Full ISOBMFF header validation, lossy compression tuning, target file size search, and browser encoding capability detection.
-- **Smart Resize**: Pixel-perfect custom dimensions and aspect-ratio lock.
-- **Interactive Crop Tool**: 8-handle crop container with aspect presets (1:1, 16:9, 4:3, etc.) and keyboard controls (`Esc` to dismiss).
-- **Dual Compression Engines**:
-  - Direct Quality Slider (1–100%) for lossy formats (JPEG, WebP, AVIF).
-  - Target File Size mode (KB/MB) utilizing binary-search canvas compression.
-- **Batch Validation in a Worker**: Files are validated (magic bytes, spoofing, decompression-bomb limits) and decoded one at a time inside the Web Worker, so a single bad file never blocks the rest of a batch.
+---
+
+## ✨ Key Features
+
+### 🛡️ Privacy & Security Architecture
+- **100% Client-Side**: Zero server-side processing, zero backend proxies, and zero third-party APIs.
+- **Strict Content Security Policy (CSP)**: Hardened headers (`public/_headers`) enforce `default-src 'self'` with zero external asset or network requests.
+- **Self-Hosted Assets**: Fonts are self-hosted via `@fontsource/inter` and `@fontsource/cormorant-garamond`. All UI icons are bundled as inline SVGs.
+- **Memory Safety & Lifecycle Management**: All `blob:` and object URLs are tracked and systematically revoked on component unmount and file removal to prevent memory leaks.
+- **Decompression Bomb Protection**: Enforces strict safety limits (`50MP` max canvas pixels, `100MB` file size, and `15,000 × 15,000 px` max dimensions).
+- **Runtime Canvas Probing**: Automatically detects browser-specific canvas dimension ceilings (e.g. Safari’s 4096px threshold) to prevent blank canvas export bugs.
+
+### 🖼️ Advanced Image Processing Engine
+- **Format Conversion**: Convert seamlessly across **AVIF**, **WebP**, **JPEG**, **PNG**, and **BMP**.
+- **AVIF Next-Gen Encoding**: Full ISOBMFF signature validation, lossy compression tuning, and browser canvas capability checks.
+- **Custom BMP Writer**: Includes a built-in 24-bit RGB BMP encoder (`src/lib/bmpEncoder.ts`) to bypass inconsistent browser canvas BMP export support.
+- **Dual Compression Modes**:
+  - **Quality Slider (1–100%)**: Fine-tune lossy compression for JPEG, WebP, and AVIF.
+  - **Target File Size (KB/MB)**: Automated binary-search canvas compression (8 iterations down to ±0.4% precision) to hit desired file weights without guesswork.
+- **Intelligent Skip Guard**: If no format, dimension, crop, or quality reduction is requested, ImageWrangler passes through the original file unaltered to preserve untouched metadata.
+- **Smart Aspect-Ratio Resizing**: Pixel-accurate dimension adjustments with live aspect-ratio locking.
+- **Interactive 8-Handle Crop Tool**: Canvas crop editor with standard aspect ratio presets (Free, 1:1, 16:9, 9:16, 4:3, 3:2), touch-optimized boundary clamping, and keyboard accessibility (`Escape` to cancel).
+- **Grid Image Merger**: Merges multiple loaded images into an optimal square-grid collage on a clean canvas for consolidated export.
+
+### 🧵 Dedicated Web Worker Pipeline
+- **Off-Thread Processing**: CPU-intensive decoding, resizing, and encoding run inside an isolated Web Worker (`src/workers/imageProcessor.worker.ts`), keeping the UI responsive at 60 FPS.
+- **Sequential Validation & Decode**: Uploaded files are validated (magic byte signature verification, zero-byte detection, spoofing checks) and decoded one by one, ensuring a corrupt file never halts the remaining batch.
+- **60-Second Watchdog & Worker Recovery**: The worker manager monitors job health. Any hung or crashed worker is automatically terminated and rebuilt, rejecting pending jobs gracefully rather than freezing.
+- **Concurrency Limiter**: Limits simultaneous worker operations to preserve device RAM when manipulating high-resolution images.
+
+### 🌓 Dual Theme & Editorial Aesthetics
+- **Warm Editorial Aesthetic**: Crafted with a bespoke Claude-inspired color system (cream `#faf9f5` canvas, warm coral `#cc785c` accents, and deep ink `#141413` surfaces).
+- **Dark Mode Support**: Seamless dark theme (`#141413` background, `#1f1e1b` card surfaces, `#d98266` coral accents) with synchronized `<meta name="theme-color">` and CSS-driven icon states to eliminate hydration flash.
+- **Zero-FOUC Architecture**: Inline pre-render script reads `localStorage.theme` and OS `prefers-color-scheme` to apply theme classes before DOM paint.
+
+### 📱 Responsive & Accessible UI (WCAG Compliant)
+- **Fluid Layout**: Mobile-first responsive layout with dynamic container scaling (`1rem` on mobile, scaling up to `2rem` on desktop).
+- **40px+ Touch Targets**: All interactive elements (theme toggle, language dropdown, modal close buttons, crop controls, card actions) meet WCAG 2.5.5 minimum touch targets.
+- **Dynamic Viewport Height**: Modals and full-screen tools utilize dynamic `dvh` with `vh` fallbacks (`.max-h-crop`, `.max-h-preview`, `.max-h-preview-body`) to prevent cutoff by mobile browser navigation bars.
+- **Floating Action Button (FAB)**: Provides quick mobile thumb access to select, download, ZIP, merge, and clear actions.
 
 ### 🌍 Multi-Language Internationalization (i18n)
-- **8 Supported Languages**:
+- **8 Supported Locales**:
   - 🇺🇸 English (`en`)
   - 🇪🇸 Spanish (`es`)
   - 🇫🇷 French (`fr`)
@@ -41,98 +63,123 @@ ImageWrangler is a **frontend-only, privacy-preserving** image suite that resize
   - 🇯🇵 Japanese (`ja`)
   - 🇨🇳 Chinese (`zh`)
   - 🇧🇷 Portuguese (`pt`)
-- **Instant Switching**: Seamless runtime switching without page reload.
-- **Persistent Preferences**: Stores language choice in `localStorage`.
-- **Zero Bloat**: Lightweight, deep-module architecture without heavy external i18n runtimes.
+- **Reactive Store**: Built using React’s `useSyncExternalStore` for instantaneous language switching across components with zero re-render lag.
+- **Accessibility & SEO Sync**: Automatically synchronizes `<html lang="...">` on language change.
+- **Persistent Preferences**: Saves chosen language in `localStorage`.
 
-### 📦 Batch & Flexible Exporting
-- **Multi-File Selection**: Checkbox selection for selective or bulk operations.
-- **Single or Batch Downloads**: Save individual assets or bundle entire collections into a clean ZIP archive.
-- **Merge All**: Combine multiple images into a unified grid collage.
-- **Live Previews**: Instant before-and-after visual inspection with detailed dimension and size metrics.
-
-### ⚡ Responsive & Accessible UI
-- Warm editorial design system (cream canvas, coral accents, serif display headings).
-- Designed with Tailwind CSS following clean design system tokens.
-- Fully responsive across desktop, tablet, and mobile with 44px+ touch targets.
-- Keyboard accessible modals (`Escape` to close) and visible focus rings.
+### 📦 Export Options
+- **Individual File Downloads**: Download single processed images with sanitized filenames.
+- **ZIP Archive Export**: Bundle selected or all processed images into a clean `.zip` archive via JSZip.
+- **Filename Sanitization**: Automatically strips path traversals, control characters, and reserved system characters from filenames prior to export.
 
 ---
 
-## 🛠️ Supported Formats
+## 🛠️ Supported Image Formats
 
-| Format | Input | Output | Compression Mode |
-| ------ | :---: | :----: | ---------------- |
-| **JPEG** | ✅ | ✅ | Quality (1–100) / Target Size |
-| **PNG**  | ✅ | ✅ | Lossless |
-| **WebP** | ✅ | ✅ | Quality (1–100) / Target Size |
-| **AVIF** | ✅ | ✅ | Quality (1–100) / Target Size *(browser canvas supported)* |
-| **BMP**  | ✅ | ✅ | Lossless |
+| Format | Import | Export | Encoding Engine | Notes |
+| :----- | :----: | :----: | :-------------- | :---- |
+| **JPEG** | ✅ | ✅ | Canvas Lossy | Full quality slider & target KB binary search |
+| **PNG** | ✅ | ✅ | Canvas Lossless | Preserves transparency |
+| **WebP** | ✅ | ✅ | Canvas Lossy / Lossless | Superior modern web compression |
+| **AVIF** | ✅ | ✅ | Canvas Lossy | Next-gen compression *(in supporting browsers)* |
+| **BMP** | ✅ | ✅ | Custom 24-bit RGB Encoder | Client-side array buffer encoder (`bmpEncoder.ts`) |
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture Overview
 
 ```
-┌─────────────────┐       ┌──────────────────────┐       ┌──────────────────────┐
-│   User Image    │ ───▶  │ Dedicated Web Worker │ ───▶  │  Offscreen / Canvas  │
-│  (Local Disk)   │       │   (ImageProcessor)   │       │   (Client Pipeline)  │
-└─────────────────┘       └──────────────────────┘       └──────────────────────┘
-                                     │
-                                     ▼
-                          ┌──────────────────────┐
-                          │ Reactive UI & State  │
-                          │ (i18n, Preview, ZIP) │
-                          └──────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                      Client UI                         │
+│  (Astro Static Shell + React 19 + Tailwind CSS)        │
+│                                                        │
+│  ┌──────────────┐   ┌──────────────┐   ┌────────────┐  │
+│  │ ImageDropzone│   │  ImageCard   │   │  CropTool  │  │
+│  └──────┬───────┘   └──────┬───────┘   └─────┬──────┘  │
+│         │                  │                 │         │
+│         ▼                  ▼                 ▼         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │             useSyncExternalStore                 │  │
+│  │         (i18n, Theme State, Queue State)         │  │
+│  └─────────────────────────┬────────────────────────┘  │
+└────────────────────────────┼───────────────────────────┘
+                             │
+                  postMessage (Single Worker)
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────┐
+│                   Web Worker Realm                     │
+│            (imageProcessor.worker.ts)                  │
+│                                                        │
+│  ┌─────────────────────────┐ ┌──────────────────────┐  │
+│  │   Magic Byte Validator  │ │ 60s Watchdog & Queue │  │
+│  │  (Decompression Bomb)   │ │  Concurrency Control │  │
+│  └────────────┬────────────┘ └──────────┬───────────┘  │
+│               │                         │              │
+│               ▼                         ▼              │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │     OffscreenCanvas Image Processing Pipeline    │  │
+│  │      (Resize / Crop / Compress / Binary Search)  │  │
+│  └─────────────────────────┬────────────────────────┘  │
+│                            │                           │
+│                            ▼                           │
+│             Output Blob (AVIF, WebP, JPG, PNG, BMP)    │
+└────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 💻 Tech Stack
 
-- **Framework**: [Astro](https://astro.build/) (Static Site Generation)
-- **UI Library**: [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Compression & Archive**: [JSZip](https://stuk.github.io/jszip/)
-- **Fonts**: Self-hosted [Inter](https://rsms.me/inter/) + [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) via Fontsource — no external font requests
-- **Icons**: Inline SVG set (`src/components/icons.tsx`) from [Coolicons](https://coolicons.cool/), [Tabler Icons](https://tabler.io/icons), and [Remix Icon](https://remixicon.com/)
+- **Framework**: [Astro](https://astro.build/) (Static Site Generation, zero runtime JS shell)
+- **UI & Logic**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) (Strict mode)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) (Design system tokens, custom utilities)
+- **Archiving**: [JSZip](https://stuk.github.io/jszip/) (Client-side ZIP generation)
+- **Typography**: Self-hosted `@fontsource/inter` and `@fontsource/cormorant-garamond`
+- **Icons**: Curated inline SVG library (Coolicons, Tabler Icons, Remix Icon)
 
 ---
 
-## 📁 Project Structure
+## 📁 Repository Structure
 
 ```
 imagewrangler/
-├── public/                 # Static assets (favicon, robots.txt, sitemap, badges)
+├── public/
+│   ├── _headers             # Cloudflare Pages CSP, security, and cache headers
+│   ├── favicon.svg          # Branded vector squircle favicon
+│   ├── robots.txt           # Crawler instructions
+│   ├── sitemap-index.xml    # Search engine sitemap
+│   └── *.png, *.svg         # Local donation badges and fallbacks
 ├── src/
-│   ├── components/         # React UI Components
-│   │   ├── CropTool.tsx    # Interactive canvas crop editor
-│   │   ├── FAQ.tsx         # Multilingual FAQ section
-│   │   ├── FloatingActionButton.tsx # Quick-action menu (select/download/ZIP/merge/clear)
-│   │   ├── Header.tsx      # App header with i18n language picker
-│   │   ├── ImageCard.tsx   # Per-image editing card & preview modal
-│   │   ├── ImageDropzone.tsx # Drag & drop upload target with validation
-│   │   ├── ImageWrangler.tsx # Core state orchestrator & action bar
-│   │   └── icons.tsx       # Bundled inline SVG icon set
+│   ├── components/          # Interactive React components
+│   │   ├── CropTool.tsx     # 8-handle touch-friendly crop editor
+│   │   ├── FAQ.tsx          # Accessible multilingual FAQ accordion
+│   │   ├── FloatingActionButton.tsx # Quick-action mobile action menu
+│   │   ├── Header.tsx       # Header with theme toggle & i18n switcher
+│   │   ├── ImageCard.tsx    # Per-image controls, resize inputs, & preview modal
+│   │   ├── ImageDropzone.tsx# Drag & drop upload area with paste support
+│   │   ├── ImageWrangler.tsx# Central application coordinator & batch actions
+│   │   └── icons.tsx        # Zero-dependency inline SVG icon library
 │   ├── layouts/
-│   │   └── Layout.astro    # Base HTML document, SEO meta & fonts
+│   │   └── Layout.astro     # HTML document shell, JSON-LD schema, & theme script
 │   ├── lib/
-│   │   ├── bmpEncoder.ts   # BMP writer (canvas has no native BMP export)
-│   │   ├── fileValidation.ts # Magic byte format detection (inc. AVIF)
-│   │   ├── i18n.ts         # 8-language dictionary and reactive hook
-│   │   ├── imageProcessor.ts # Canvas transformations & compression
-│   │   ├── types.ts        # Shared TypeScript interfaces
-│   │   ├── utils.ts        # Small helpers (cn, formatBytes, generateId)
-│   │   └── workerManager.ts # Web worker abstraction pool
+│   │   ├── bmpEncoder.ts    # Pure JavaScript 24-bit RGB BMP encoder
+│   │   ├── fileValidation.ts# File signatures, magic bytes, & bomb protection
+│   │   ├── i18n.ts          # 8-language dictionary and useTranslation store
+│   │   ├── imageProcessor.ts# Canvas resize, compression, & merge logic
+│   │   ├── types.ts         # Shared TypeScript interfaces & security constants
+│   │   ├── utils.ts         # Formatting, class merging, and ID generation
+│   │   └── workerManager.ts # Web Worker pool, watchdog, & concurrency queue
 │   ├── pages/
-│   │   └── index.astro     # Root application page
+│   │   └── index.astro      # Application entrypoint
 │   ├── styles/
-│   │   └── global.css      # Design tokens and utility layers
+│   │   └── global.css       # Tailwind directives, theme variables, & utilities
 │   └── workers/
-│       └── imageProcessor.worker.ts # Off-thread image computation
-├── astro.config.mjs        # Astro configuration
-├── tailwind.config.ts      # Tailwind design system tokens
-└── tsconfig.json           # Strict TypeScript configuration
+│       └── imageProcessor.worker.ts # Off-thread image processing worker
+├── astro.config.mjs         # Astro site and integration config
+├── package.json             # Scripts and dependencies
+├── tailwind.config.ts       # Tailwind theme colors and responsive scales
+└── tsconfig.json            # Strict TypeScript configuration
 ```
 
 ---
@@ -140,54 +187,71 @@ imagewrangler/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm or pnpm
+- **Node.js**: v18.0.0 or higher
+- **Package Manager**: npm, pnpm, or yarn
 
 ### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/Ashutoshgit47/ImageWrangler.git
+
+# Navigate into the project directory
 cd ImageWrangler
+
+# Install dependencies
 npm install
 ```
 
-### Development Server
+### Local Development
 
 ```bash
+# Start local development server with hot-reload
 npm run dev
 ```
-Open `http://localhost:4321` to view the app locally.
+
+Visit `http://localhost:4321` in your browser.
+
+### Type & Quality Checks
+
+```bash
+# Run Astro diagnostics
+npm run check
+
+# Run strict TypeScript compiler verification
+npm run typecheck
+```
 
 ### Production Build
 
 ```bash
+# Build production bundle to /dist
 npm run build
-```
-Generates an optimized static output in `dist/`, ready for Cloudflare Pages, Vercel, or GitHub Pages.
 
-### Quality Checks
-
-```bash
-npm run check      # Astro + TypeScript diagnostics
-npm run typecheck  # Strict TypeScript check
+# Preview production build locally
+npm run preview
 ```
 
 ---
 
-## 👨‍💻 About the Developer
+## 🔒 Security & Privacy Policy
+
+ImageWrangler operates strictly on a **zero-trust, local-first** principle:
+1. No telemetry or analytics SDKs are included in the bundle.
+2. No cookies are stored or requested.
+3. No user images or file names are ever transmitted across a network.
+4. All worker pipelines execute in sandboxed browser contexts.
+
+---
+
+## 👨‍💻 Author
 
 **Ashutosh Gautam**
-- **GitHub**: [https://github.com/Ashutoshgit47](https://github.com/Ashutoshgit47)
-- **Portfolio / Website**: [https://ashutosh47.pages.dev/](https://ashutosh47.pages.dev/)
-
-Feel free to open an issue or pull request if you have ideas or suggestions!
+- GitHub: [@Ashutoshgit47](https://github.com/Ashutoshgit47)
+- Portfolio: [ashutosh47.pages.dev](https://ashutosh47.pages.dev/)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-> ⭐ If you find ImageWrangler useful, please star the repository!
+This project is open source and available under the [MIT License](LICENSE).
