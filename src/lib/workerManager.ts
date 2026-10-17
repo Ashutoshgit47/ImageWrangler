@@ -47,10 +47,16 @@ function getWorker(): Worker {
 
                 if (type === 'PROCESS_ERROR') {
                     pending.reject(new Error(error || 'Unknown processing error'));
-                } else if (type === 'PROCESS_COMPLETE' && result) {
-                    pending.resolve(result);
+                } else if (type === 'PROCESS_COMPLETE') {
+                    if (result) {
+                        pending.resolve(result);
+                    } else {
+                        pending.reject(new Error('Processing completed without output result'));
+                    }
                 } else if (type === 'VALIDATE_RESULT') {
                     pending.resolve(isValid ?? false);
+                } else {
+                    pending.reject(new Error(`Unexpected worker response type: ${type}`));
                 }
             } else {
                 console.warn(`Received response for unknown/cancelled operation: ${id}`);

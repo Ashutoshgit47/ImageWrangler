@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '../lib/i18n';
-import { Github, ChevronDown } from 'lucide-react';
+import { Github, ChevronDown, Globe, Check } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function Header() {
@@ -76,15 +76,15 @@ export function Header() {
                             aria-expanded={isLangOpen}
                             aria-label="Select language"
                         >
-                            <span className="text-sm">{activeLocaleObj.flag}</span>
+                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="hidden sm:inline">{activeLocaleObj.nativeName}</span>
                             <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", isLangOpen && "rotate-180")} />
                         </button>
 
                         {isLangOpen && (
-                            <div className="absolute right-0 mt-1.5 w-44 rounded-lg border border-border bg-card shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
-                                <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">
-                                    Language / भाषा
+                            <div className="absolute right-0 mt-1.5 w-40 rounded-lg border border-border bg-card shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="text-[10px] font-semibold text-muted-foreground px-2.5 py-1 uppercase tracking-wider">
+                                    Language
                                 </div>
                                 <div className="max-h-60 overflow-y-auto space-y-0.5">
                                     {locales.map(loc => (
@@ -101,13 +101,10 @@ export function Header() {
                                                     : "hover:bg-muted text-foreground"
                                             )}
                                         >
-                                            <span className="flex items-center gap-2">
-                                                <span>{loc.flag}</span>
-                                                <span>{loc.nativeName}</span>
-                                            </span>
-                                            <span className="text-[10px] opacity-70">
-                                                {loc.code.toUpperCase()}
-                                            </span>
+                                            <span>{loc.nativeName}</span>
+                                            {currentLocale === loc.code && (
+                                                <Check className="h-3.5 w-3.5 shrink-0" />
+                                            )}
                                         </button>
                                     ))}
                                 </div>

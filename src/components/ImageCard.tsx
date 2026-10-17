@@ -103,9 +103,11 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
 
         if (image.options.keepAspectRatio) {
             const oldSourceWidth = image.options.crop?.width || image.originalWidth;
-            const ratio = crop.width / oldSourceWidth;
-            newWidth = Math.round(image.options.width * ratio);
-            newHeight = Math.round(image.options.height * ratio);
+            if (oldSourceWidth > 0) {
+                const ratio = crop.width / oldSourceWidth;
+                newWidth = Math.max(1, Math.round(image.options.width * ratio));
+                newHeight = Math.max(1, Math.round(image.options.height * ratio));
+            }
         }
 
         const pixelCrop: PixelCrop = { ...crop, unit: 'px' };

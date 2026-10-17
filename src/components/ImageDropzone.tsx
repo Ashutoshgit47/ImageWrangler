@@ -19,7 +19,7 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFiles = useCallback(async (files: FileList | null) => {
+    const handleFiles = useCallback(async (files: FileList | File[] | null) => {
         if (!files || files.length === 0) return;
 
         const imageFiles = Array.from(files);
@@ -74,8 +74,26 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
     };
 
     const handlePaste = useCallback(async (event: ClipboardEvent) => {
-        if (event.clipboardData && event.clipboardData.files.length > 0) {
-            await handleFiles(event.clipboardData.files);
+        if (!event.clipboardData) return;
+        const pastedFiles: File[] = [];
+
+        if (event.clipboardData.files && event.clipboardData.files.length > 0) {
+            for (let i = 0; i < event.clipboardData.files.length; i++) {
+                pastedFiles.push(event.clipboardData.files[i]);
+            }
+        } else if (event.clipboardData.items) {
+            for (let i = 0; i < event.clipboardData.items.length; i++) {
+                const item = event.clipboardData.items[i];
+                if (item.kind === 'file') {
+                    const file = item.getAsFile();
+                    if (file) pastedFiles.push(file);
+                }
+            }
+        }
+
+        if (pastedFiles.length > 0) {
+            event.preventDefault();
+            await handleFiles(pastedFiles);
         }
     }, [handleFiles]);
 
