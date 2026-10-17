@@ -65,6 +65,62 @@
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+.dark {
+  color-scheme: dark;
+
+  /* ── Brand / Primary (warm vibrant coral on dark) ── */
+  --color-primary: #d98266;
+  --color-primary-hover: #e39379;
+  --color-primary-active: #c57256;
+  --color-primary-foreground: #ffffff;
+
+  /* ── Text ── */
+  --color-foreground: #f5f0e8;
+  --color-secondary-text: #a09d96;
+  --color-muted-foreground: #a09d96;
+  --color-disabled-text: #6c6a64;
+
+  /* ── Background & Surface (warm Claude darks) ── */
+  --color-background: #141413;
+  --color-card: #1f1e1b;
+  --color-card-foreground: #faf9f5;
+  --color-elevated: #282622;
+  --color-overlay: #282622;
+  --color-border: #2d2b27;
+
+  /* ── Accent / Secondary ── */
+  --color-accent: #2e2c27;
+  --color-accent-soft: #383530;
+  --color-accent-disabled: #4a4742;
+  --color-accent-foreground: #faf9f5;
+
+  /* ── Status & Feedback ── */
+  --color-success: #5db872;
+  --color-warning: #d4a017;
+  --color-destructive: #c64545;
+  --color-destructive-hover: #d95858;
+  --color-info: #5db8a6;
+  --color-destructive-foreground: #ffffff;
+
+  /* ── Interactive & Utility ── */
+  --color-ring: #d98266;
+  --color-ring-shadow: rgba(217, 130, 102, 0.25);
+  --color-disabled-surface: #252320;
+  --color-hover-surface: #282622;
+  --color-drag-overlay: rgba(217, 130, 102, 0.15);
+
+  /* ── Form Elements ── */
+  --color-input: #1a1917;
+  --color-input-border: #2d2b27;
+  --color-input-focus: #d98266;
+  --color-placeholder: #6c6a64;
+
+  /* ── Aliases ── */
+  --color-secondary: #252320;
+  --color-secondary-foreground: #faf9f5;
+  --color-muted: #1f1e1b;
+}
+
 @layer base {
   body {
     background-color: var(--color-background);
@@ -337,6 +393,51 @@
 
   .hover\:border-primary\/50:hover {
     border-color: rgba(204, 120, 92, 0.50);
+  }
+
+  /* ── Dark mode translucent overrides ── */
+  .dark .bg-background\/95 {
+    background-color: rgba(20, 20, 19, 0.95);
+  }
+
+  .dark .bg-muted\/30 {
+    background-color: rgba(31, 30, 27, 0.65);
+  }
+
+  .dark .bg-primary\/10 {
+    background-color: rgba(217, 130, 102, 0.12);
+  }
+
+  .dark .border-border\/50 {
+    border-color: rgba(45, 43, 39, 0.70);
+  }
+
+  .dark .border-primary\/50 {
+    border-color: rgba(217, 130, 102, 0.50);
+  }
+
+  .dark .ring-border\/50 {
+    --tw-ring-color: rgba(45, 43, 39, 0.70);
+  }
+
+  .dark .ring-primary\/30 {
+    --tw-ring-color: rgba(217, 130, 102, 0.30);
+  }
+
+  .dark .ring-primary\/50 {
+    --tw-ring-color: rgba(217, 130, 102, 0.50);
+  }
+
+  .dark .text-muted-foreground\/60 {
+    color: rgba(160, 157, 150, 0.75);
+  }
+
+  .dark .hover\:bg-muted\/30:hover {
+    background-color: rgba(40, 38, 34, 0.65);
+  }
+
+  .dark .hover\:border-primary\/50:hover {
+    border-color: rgba(217, 130, 102, 0.50);
   }
 }
 

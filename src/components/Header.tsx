@@ -1,14 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '../lib/i18n';
-import { Github, ChevronDown, Globe, Check } from './icons';
+import { Github, ChevronDown, Globe, Check, Sun, Moon } from './icons';
 import { cn } from '../lib/utils';
 
 export function Header() {
     const { currentLocale, changeLocale, locales } = useTranslation();
     const [isVisible, setIsVisible] = useState(true);
     const [isLangOpen, setIsLangOpen] = useState(false);
+    const [isDark, setIsDark] = useState(false);
     const lastScrollY = useRef(0);
     const langMenuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setIsDark(document.documentElement.classList.contains('dark'));
+
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleMediaChange = (e: MediaQueryListEvent) => {
+            if (!localStorage.getItem('theme')) {
+                const prefersDark = e.matches;
+                setIsDark(prefersDark);
+                if (prefersDark) {
+                    document.documentElement.classList.add('dark');
+                    const meta = document.getElementById('theme-color-meta');
+                    if (meta) meta.setAttribute('content', '#141413');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    const meta = document.getElementById('theme-color-meta');
+                    if (meta) meta.setAttribute('content', '#faf9f5');
+                }
+            }
+        };
+        media.addEventListener('change', handleMediaChange);
+        return () => media.removeEventListener('change', handleMediaChange);
+    }, []);
+
+    const toggleTheme = () => {
+        const nextDark = !isDark;
+        setIsDark(nextDark);
+        if (nextDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            const meta = document.getElementById('theme-color-meta');
+            if (meta) meta.setAttribute('content', '#141413');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            const meta = document.getElementById('theme-color-meta');
+            if (meta) meta.setAttribute('content', '#faf9f5');
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -68,6 +108,20 @@ export function Header() {
 
                 {/* Navigation actions */}
                 <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Theme Toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        className="flex items-center justify-center p-2 rounded-md border border-border bg-card hover:bg-elevated text-foreground transition-colors"
+                        aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+                        title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+                    >
+                        {isDark ? (
+                            <Sun className="h-3.5 w-3.5 text-primary" />
+                        ) : (
+                            <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                    </button>
+
                     {/* Language Switcher Dropdown */}
                     <div className="relative" ref={langMenuRef}>
                         <button
