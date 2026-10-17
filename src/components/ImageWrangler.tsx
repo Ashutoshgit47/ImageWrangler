@@ -128,9 +128,14 @@ export function ImageWrangler() {
             const { width, height } = bitmap;
             bitmap.close();
 
-            const rawType = file.type.split('/')[1]?.toLowerCase() || 'jpeg';
-            const supported = ['jpeg', 'png', 'webp', 'bmp', 'avif'];
-            const format = (supported.includes(rawType) ? rawType : 'jpeg') as ProcessOptions['format'];
+            let format: ProcessOptions['format'] = 'jpeg';
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            const mime = file.type.toLowerCase();
+            if (mime === 'image/png' || ext === 'png') format = 'png';
+            else if (mime === 'image/webp' || ext === 'webp') format = 'webp';
+            else if (mime === 'image/avif' || ext === 'avif') format = 'avif';
+            else if (mime.includes('bmp') || ext === 'bmp') format = 'bmp';
+            else format = 'jpeg';
 
             const previewUrl = URL.createObjectURL(file);
             objectUrls.current.add(previewUrl);

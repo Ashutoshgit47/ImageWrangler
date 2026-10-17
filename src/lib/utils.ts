@@ -20,18 +20,18 @@ export function cn(...inputs: ClassValue[]): string {
  * @param decimals - Number of decimal places (default: 2)
  */
 export function formatBytes(bytes: number, decimals: number = 2): string {
-  if (bytes === 0) return '0 Bytes';
-  if (bytes < 0) return '0 Bytes';
-  if (!Number.isFinite(bytes)) return '0 Bytes';
+  if (bytes <= 0 || !Number.isFinite(bytes)) return '0 Bytes';
+
+
 
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
 
-  const i = Math.min(
+  const i = Math.max(0, Math.min(
     Math.floor(Math.log(bytes) / Math.log(k)),
     sizes.length - 1
-  );
+  ));
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }

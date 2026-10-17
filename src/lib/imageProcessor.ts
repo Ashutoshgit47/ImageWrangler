@@ -64,7 +64,9 @@ export async function processImage(file: File, options: ProcessOptions): Promise
     const isResized = targetWidth !== bitmap.width || targetHeight !== bitmap.height;
     
     // Normalize file.type (e.g. 'image/jpeg') to match options.format
-    let originalMime = file.type;
+    let originalMime = (file.type || '').toLowerCase();
+    if (originalMime === 'image/jpg' || originalMime === 'image/pjpeg') originalMime = 'image/jpeg';
+    else if (originalMime === 'image/x-ms-bmp' || originalMime === 'image/x-bmp') originalMime = 'image/bmp';
     // Handle edge case where file type might be empty or different
     if (!originalMime) {
         const ext = file.name.split('.').pop()?.toLowerCase();
@@ -101,7 +103,7 @@ export async function processImage(file: File, options: ProcessOptions): Promise
 
 
     if (targetWidth * targetHeight > SecurityConstants.MAX_PIXELS) {
-      throw new Error(`Output dimensions exceed safety limit (${SecurityConstants.MAX_PIXELS} pixels).`);
+      throw new Error(`Output dimensions exceed safety limit (${Math.round(SecurityConstants.MAX_PIXELS / 1_000_000)} MP).`);
     }
 
     const canvas = createCanvas(targetWidth, targetHeight);
@@ -138,7 +140,8 @@ export async function processImage(file: File, options: ProcessOptions): Promise
 
     const mimeType = `image/${options.format}`;
     const isLossy = options.format === 'jpeg' || options.format === 'webp' || options.format === 'avif';
-    const quality = isLossy ? options.quality / 100 : undefined;
+    const rawQuality = typeof options.quality === 'number' && !isNaN(options.quality) ? options.quality : 92;
+    const quality = isLossy ? Math.max(0.01, Math.min(1.0, rawQuality / 100)) : undefined;
 
     // Helper to safely convert canvas to blob with AVIF support verification
     const safeConvertToBlob = async (c: OffscreenCanvas | HTMLCanvasElement, mime: string, q?: number): Promise<Blob> => {
@@ -258,8 +261,8 @@ export async function mergeImages(files: (File | Blob)[]): Promise<Blob> {
         drawH = cellH;
         drawW = Math.round(drawH * aspect);
       }
-      const x = c * cellW + (cellW - drawW) / 2;
-      const y = r * cellH + (cellH - drawH) / 2;
+      const x = Math.round(c * cellW + (cellW - drawW) / 2);
+      const y = Math.round(r * cellH + (cellH - drawH) / 2);
       ctx.drawImage(bmp, x, y, drawW, drawH);
     });
 
@@ -295,25 +298,24 @@ export function calculateAspectRatioDimensions(
   lockAspect: boolean,
   changedDimension: 'width' | 'height'
 ): { width: number; height: number } {
-  if (!lockAspect) {
-    return { width: targetWidth, height: targetHeight };
-  }
+  const safeTargetW = Math.max(1, Math.round(targetWidth));
+  const safeTargetH = Math.max(1, Math.round(targetHeight));
 
-  if (sourceHeight === 0 || sourceWidth === 0) {
-    return { width: targetWidth, height: targetHeight };
+  if (!lockAspect || sourceHeight <= 0 || sourceWidth <= 0) {
+    return { width: safeTargetW, height: safeTargetH };
   }
 
   const aspectRatio = sourceWidth / sourceHeight;
 
   if (changedDimension === 'width') {
     return {
-      width: targetWidth,
-      height: Math.round(targetWidth / aspectRatio),
+      width: safeTargetW,
+      height: Math.max(1, Math.round(safeTargetW / aspectRatio)),
     };
   } else {
     return {
-      width: Math.round(targetHeight * aspectRatio),
-      height: targetHeight,
+      width: Math.max(1, Math.round(safeTargetH * aspectRatio)),
+      height: safeTargetH,
     };
   }
 }
@@ -357,10 +359,13 @@ export function createCenteredCrop(
     cropHeight = cropWidth / aspectRatio;
   }
 
+  const safeW = Math.max(1, Math.round(cropWidth));
+  const safeH = Math.max(1, Math.round(cropHeight));
+
   return {
-    x: (imageWidth - cropWidth) / 2,
-    y: (imageHeight - cropHeight) / 2,
-    width: cropWidth,
-    height: cropHeight,
+    x: Math.max(0, Math.round((imageWidth - safeW) / 2)),
+    y: Math.max(0, Math.round((imageHeight - safeH) / 2)),
+    width: safeW,
+    height: safeH,
   };
 }
