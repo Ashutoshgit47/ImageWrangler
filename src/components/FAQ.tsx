@@ -24,7 +24,6 @@ const FAQ_ITEMS: FAQItem[] = [
     { qKey: 'faq_q8', aKey: 'faq_a8' },
     { qKey: 'faq_q9', aKey: 'faq_a9' },
     { qKey: 'faq_q10', aKey: 'faq_a10' },
-    { qKey: 'faq_q11', aKey: 'faq_a11' },
 ];
 
 interface AccordionItemProps {

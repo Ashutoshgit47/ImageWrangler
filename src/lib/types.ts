@@ -6,16 +6,30 @@
 
 import type { PixelCrop } from 'react-image-crop';
 
-/** Supported output image formats */
-export type ImageFormat = 'jpeg' | 'png' | 'webp' | 'bmp' | 'avif';
+/** Supported output image formats as const tuple */
+export const SUPPORTED_FORMATS = ['jpeg', 'png', 'webp', 'bmp', 'avif'] as const;
+export type ImageFormat = (typeof SUPPORTED_FORMATS)[number];
+
+/** Mapped type linking format to exact MIME type */
+export type FormatMimeMap = {
+  readonly [K in ImageFormat]: `image/${K}`;
+};
+
+export const FORMAT_TO_MIME: FormatMimeMap = {
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  avif: 'image/avif',
+} as const;
 
 export const SecurityConstants = {
   MAX_WIDTH: 15000,
   MAX_HEIGHT: 15000,
   MAX_PIXELS: 50_000_000, // 50MP limit for decompression bomb protection
   MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB input limit
-  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.avif'],
-};
+  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.avif'] as const,
+} as const;
 
 
 /** Crop region coordinates and dimensions */
