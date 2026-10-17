@@ -207,7 +207,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                     {image.options.crop && (
                         <button
                             onClick={handleCropReset}
-                            className="absolute bottom-2 right-2 z-10 px-2.5 py-1.5 text-xs rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-1.5 shadow-md transition-colors"
+                            className="absolute bottom-2 right-2 z-10 px-3 py-2 min-h-[40px] text-xs rounded-md bg-destructive text-destructive-foreground hover:bg-destructive-hover flex items-center gap-1.5 shadow-md transition-colors"
                         >
                             <XCircle className="h-3.5 w-3.5" />
                             {t('reset_crop')}
@@ -382,7 +382,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setShowPreview(true)}
-                            className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-elevated transition-colors text-foreground"
+                            className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-elevated transition-colors text-foreground"
                             title={t('preview')}
                         >
                             <Eye className="h-4 w-4" />
@@ -405,7 +405,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                 }
                             }}
                             disabled={!image.processedFile}
-                            className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-elevated transition-colors text-primary disabled:opacity-50"
+                            className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-elevated transition-colors text-primary disabled:opacity-50"
                             title={t('download')}
                         >
                             <Download className="h-4 w-4" />
@@ -413,7 +413,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                         </button>
                         <button
                             onClick={() => onRemove(image.id)}
-                            className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-elevated transition-colors text-destructive"
+                            className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-elevated transition-colors text-destructive"
                             title={t('remove')}
                         >
                             <Trash2 className="h-4 w-4" />
@@ -444,18 +444,18 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                     aria-modal="true"
                     aria-label={t('preview')}
                 >
-                    <div className="bg-card rounded-xl max-w-4xl w-full max-h-[90dvh] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-border" onClick={e => e.stopPropagation()}>
+                    <div className="bg-card rounded-xl max-w-4xl w-full max-h-preview flex flex-col overflow-hidden shadow-2xl border border-border" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border shrink-0">
                             <h3 className="font-display text-xl font-medium">{t('preview')}</h3>
                             <button
                                 onClick={() => setShowPreview(false)}
-                                className="p-1.5 hover:bg-elevated rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                className="p-2.5 hover:bg-elevated rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                 aria-label={t('crop_cancel')}
                             >
                                 <XCircle className="h-5 w-5" />
                             </button>
                         </div>
-                        <div className="overflow-y-auto max-h-[calc(90dvh-70px)] p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="overflow-y-auto max-h-preview-body p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <h4 className="font-display text-base font-medium mb-2 text-center">{t('original')} ({formatBytes(image.file.size)})</h4>
                                 <div className="relative w-full aspect-video bg-elevated rounded-md overflow-hidden">

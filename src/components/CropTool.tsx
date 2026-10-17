@@ -81,8 +81,8 @@ export function CropTool({
     useEffect(() => {
         const updateScale = () => {
             if (containerRef.current && originalWidth > 0 && originalHeight > 0) {
-                const containerWidth = Math.max(100, containerRef.current.clientWidth - 24);
-                const containerHeight = Math.max(100, (containerRef.current.clientHeight || (window.innerHeight * 0.5)) - 24);
+                const containerWidth = Math.max(100, containerRef.current.clientWidth - 32);
+                const containerHeight = Math.max(100, (containerRef.current.clientHeight || (window.innerHeight * 0.5)) - 32);
                 const scaleX = containerWidth / originalWidth;
                 const scaleY = containerHeight / originalHeight;
                 setDisplayScale(Math.min(scaleX, scaleY, 1));
@@ -386,11 +386,11 @@ export function CropTool({
 
     return (
         <div className="fixed inset-0 z-50 bg-accent/90 flex items-center justify-center p-2 sm:p-4">
-            <div className="bg-card rounded-xl w-full max-w-3xl max-h-[92dvh] max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-border">
+            <div className="bg-card rounded-xl w-full max-w-3xl max-h-crop overflow-hidden flex flex-col shadow-2xl border border-border">
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border shrink-0">
                     <h3 className="font-display text-lg font-medium">{t('crop_title')}</h3>
-                    <button onClick={onCancel} className="p-1.5 rounded-md hover:bg-elevated transition-colors text-muted-foreground hover:text-foreground" aria-label={t('crop_cancel')}>
+                    <button onClick={onCancel} className="p-2.5 rounded-md hover:bg-elevated transition-colors text-muted-foreground hover:text-foreground" aria-label={t('crop_cancel')}>
                         <X className="h-5 w-5" />
                     </button>
                 </div>
@@ -402,7 +402,7 @@ export function CropTool({
                             key={ar.label}
                             onClick={() => applyAspectRatio(ar.value)}
                             className={cn(
-                                "px-3 py-1.5 min-h-[36px] text-xs font-medium rounded-md whitespace-nowrap transition-colors shrink-0",
+                                "px-3 py-1.5 min-h-[40px] text-xs font-medium rounded-md whitespace-nowrap transition-colors shrink-0",
                                 aspectRatio === ar.value
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-background hover:bg-muted border border-border text-foreground"
@@ -413,7 +413,7 @@ export function CropTool({
                     ))}
                     <button
                         onClick={resetCrop}
-                        className="px-3 py-1.5 min-h-[36px] text-xs font-medium rounded-md bg-background hover:bg-muted border border-border flex items-center gap-1.5 whitespace-nowrap shrink-0 text-foreground"
+                        className="px-3 py-1.5 min-h-[40px] text-xs font-medium rounded-md bg-background hover:bg-muted border border-border flex items-center gap-1.5 whitespace-nowrap shrink-0 text-foreground"
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                         {t('crop_reset')}

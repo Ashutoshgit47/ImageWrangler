@@ -3,50 +3,48 @@ import { useTranslation } from '../lib/i18n';
 import { Github, ChevronDown, Globe, Check, Sun, Moon } from './icons';
 import { cn } from '../lib/utils';
 
+const THEME_STORAGE_KEY = 'theme';
+
+/** Reads the stored theme preference without throwing when storage is blocked. */
+function getStoredTheme(): string | null {
+    try {
+        return localStorage.getItem(THEME_STORAGE_KEY);
+    } catch {
+        return null;
+    }
+}
+
+/** Applies the theme to <html> and keeps the browser chrome color in sync. */
+function applyTheme(isDark: boolean): void {
+    document.documentElement.classList.toggle('dark', isDark);
+    const meta = document.getElementById('theme-color-meta');
+    if (meta) meta.setAttribute('content', isDark ? '#141413' : '#faf9f5');
+}
+
 export function Header() {
-    const { currentLocale, changeLocale, locales } = useTranslation();
+    const { t, currentLocale, changeLocale, locales } = useTranslation();
     const [isVisible, setIsVisible] = useState(true);
     const [isLangOpen, setIsLangOpen] = useState(false);
-    const [isDark, setIsDark] = useState(false);
     const lastScrollY = useRef(0);
     const langMenuRef = useRef<HTMLDivElement>(null);
 
+    // Follow the OS preference only while the user has not chosen a theme explicitly.
     useEffect(() => {
-        setIsDark(document.documentElement.classList.contains('dark'));
-
         const media = window.matchMedia('(prefers-color-scheme: dark)');
         const handleMediaChange = (e: MediaQueryListEvent) => {
-            if (!localStorage.getItem('theme')) {
-                const prefersDark = e.matches;
-                setIsDark(prefersDark);
-                if (prefersDark) {
-                    document.documentElement.classList.add('dark');
-                    const meta = document.getElementById('theme-color-meta');
-                    if (meta) meta.setAttribute('content', '#141413');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    const meta = document.getElementById('theme-color-meta');
-                    if (meta) meta.setAttribute('content', '#faf9f5');
-                }
-            }
+            if (getStoredTheme() === null) applyTheme(e.matches);
         };
         media.addEventListener('change', handleMediaChange);
         return () => media.removeEventListener('change', handleMediaChange);
     }, []);
 
     const toggleTheme = () => {
-        const nextDark = !isDark;
-        setIsDark(nextDark);
-        if (nextDark) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-            const meta = document.getElementById('theme-color-meta');
-            if (meta) meta.setAttribute('content', '#141413');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-            const meta = document.getElementById('theme-color-meta');
-            if (meta) meta.setAttribute('content', '#faf9f5');
+        const nextDark = !document.documentElement.classList.contains('dark');
+        applyTheme(nextDark);
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, nextDark ? 'dark' : 'light');
+        } catch {
+            /* storage blocked — theme still applies for this session */
         }
     };
 
@@ -108,25 +106,22 @@ export function Header() {
 
                 {/* Navigation actions */}
                 <div className="flex items-center gap-1.5 sm:gap-2.5">
-                    {/* Theme Toggle */}
+                    {/* Theme Toggle — icons are CSS-driven so there is no hydration flash */}
                     <button
                         onClick={toggleTheme}
-                        className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-elevated text-foreground transition-colors"
-                        aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-                        title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+                        className="h-10 w-10 flex items-center justify-center rounded-md border border-border bg-card hover:bg-elevated text-foreground transition-colors"
+                        aria-label={t('theme_toggle')}
+                        title={t('theme_toggle')}
                     >
-                        {isDark ? (
-                            <Sun className="h-4 w-4 text-primary" />
-                        ) : (
-                            <Moon className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        <Sun className="hidden dark:block h-4 w-4 text-primary" />
+                        <Moon className="block dark:hidden h-4 w-4 text-muted-foreground" />
                     </button>
 
                     {/* Language Switcher Dropdown */}
                     <div className="relative" ref={langMenuRef}>
                         <button
                             onClick={() => setIsLangOpen(!isLangOpen)}
-                            className="h-9 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md border border-border bg-card hover:bg-elevated text-xs font-medium transition-colors"
+                            className="h-10 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md border border-border bg-card hover:bg-elevated text-xs font-medium transition-colors"
                             aria-expanded={isLangOpen}
                             aria-label="Select language"
                         >
@@ -149,7 +144,7 @@ export function Header() {
                                                 setIsLangOpen(false);
                                             }}
                                             className={cn(
-                                                "w-full flex items-center justify-between px-2.5 py-2 min-h-[36px] rounded text-xs text-left transition-colors",
+                                                "w-full flex items-center justify-between px-2.5 py-2 min-h-[40px] rounded text-xs text-left transition-colors",
                                                 currentLocale === loc.code
                                                     ? "bg-primary text-primary-foreground font-semibold"
                                                     : "hover:bg-elevated text-foreground"
@@ -171,7 +166,7 @@ export function Header() {
                         href="https://github.com/Ashutoshgit47/ImageWrangler"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-9 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md text-xs font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors"
+                        className="h-10 flex items-center gap-1.5 px-2.5 sm:px-3 rounded-md text-xs font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors"
                         title="GitHub Repository"
                     >
                         <Github className="h-4 w-4" />

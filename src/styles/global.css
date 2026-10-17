@@ -8,6 +8,8 @@
    ============================================ */
 
 :root {
+  color-scheme: light;
+
   /* ── Brand / Primary (coral) ── */
   --color-primary: #cc785c;
   --color-primary-hover: #a9583e;
@@ -383,10 +385,6 @@
   }
 
   /* ── Hover variants for the same tints ── */
-  .hover\:bg-destructive\/90:hover {
-    background-color: rgba(176, 61, 61, 0.90);
-  }
-
   .hover\:bg-muted\/30:hover {
     background-color: rgba(245, 240, 232, 0.55);
   }
@@ -474,5 +472,31 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ── Modal viewport helpers + one tint Tailwind cannot emit.
+   Kept unlayered so they are never tree-shaken; the second
+   declaration wins in browsers that support it (vh = fallback). ── */
+.max-h-crop {
+  max-height: 92vh;
+  max-height: 92dvh;
+}
+
+.max-h-preview {
+  max-height: 90vh;
+  max-height: 90dvh;
+}
+
+.max-h-preview-body {
+  max-height: calc(90vh - 70px);
+  max-height: calc(90dvh - 70px);
+}
+
+.border-primary\/20 {
+  border-color: rgba(204, 120, 92, 0.20);
+}
+
+.dark .border-primary\/20 {
+  border-color: rgba(217, 130, 102, 0.28);
 }
 
