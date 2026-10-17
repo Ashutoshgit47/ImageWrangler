@@ -1,30 +1,60 @@
 /**
  * ImageWrangler - Worker Manager
- * Manages Web Worker lifecycle and provides a Promise-based API
- * with request queuing and concurrency limits to prevent memory exhaustion.
+ * Manages Web Worker lifecycle and provides a Promise-based API with request
+ * queuing, concurrency limits, and a watchdog so a hung worker can never leave
+ * callers waiting forever.
  */
 
-import type { ProcessOptions, WorkerMessage, WorkerResponse } from './types';
+import type { ProcessOptions, ValidationResult, WorkerMessage, WorkerResponse } from './types';
 import { generateId } from './utils';
 
 // Hard concurrency limit - process only 2 images at a time to save memory
 // on potential 50MP images.
 const MAX_CONCURRENCY = 2;
+
+// Watchdog: if a job produces no response in this window, the worker is
+// declared stuck, torn down, and every caller is failed instead of hanging.
+const JOB_TIMEOUT_MS = 60_000;
+
 let activeJobs = 0;
 const jobQueue: Array<{
     job: () => void;
-    resolve: (value: Blob | boolean) => void;
     reject: (error: Error) => void;
 }> = [];
 
 // Worker instance (lazy initialized)
 let worker: Worker | null = null;
 
-// Pending operations map
-const pendingOperations = new Map<string, {
-    resolve: (value: Blob | boolean) => void;
+interface PendingOperation {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    resolve: (value: any) => void;
     reject: (error: Error) => void;
-}>();
+    timer: ReturnType<typeof setTimeout>;
+}
+
+// Pending operations map
+const pendingOperations = new Map<string, PendingOperation>();
+
+/**
+ * Tear down the worker and fail everything queued or in flight
+ */
+function resetWorker(reason: Error): void {
+    if (worker) {
+        worker.terminate();
+        worker = null;
+    }
+
+    pendingOperations.forEach((pending) => {
+        clearTimeout(pending.timer);
+        pending.reject(reason);
+    });
+    pendingOperations.clear();
+
+    jobQueue.forEach(({ reject }) => reject(reason));
+    jobQueue.length = 0;
+
+    activeJobs = 0;
+}
 
 /**
  * Get or create the worker instance
@@ -37,51 +67,38 @@ function getWorker(): Worker {
         );
 
         worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-            const { id, type, result, isValid, error } = event.data;
+            const { id, type, result, isValid, width, height, error } = event.data;
             const pending = pendingOperations.get(id);
 
-            if (pending) {
-                pendingOperations.delete(id);
-                activeJobs--;
-                processNextJob();
-
-                if (type === 'PROCESS_ERROR') {
-                    pending.reject(new Error(error || 'Unknown processing error'));
-                } else if (type === 'PROCESS_COMPLETE') {
-                    if (result) {
-                        pending.resolve(result);
-                    } else {
-                        pending.reject(new Error('Processing completed without output result'));
-                    }
-                } else if (type === 'VALIDATE_RESULT') {
-                    pending.resolve(isValid ?? false);
-                } else {
-                    pending.reject(new Error(`Unexpected worker response type: ${type}`));
-                }
-            } else {
+            if (!pending) {
                 console.warn(`Received response for unknown/cancelled operation: ${id}`);
+                return;
+            }
+
+            clearTimeout(pending.timer);
+            pendingOperations.delete(id);
+            activeJobs--;
+            processNextJob();
+
+            if (type === 'PROCESS_ERROR') {
+                pending.reject(new Error(error || 'Unknown processing error'));
+            } else if (type === 'PROCESS_COMPLETE') {
+                if (result) {
+                    pending.resolve(result);
+                } else {
+                    pending.reject(new Error('Processing completed without output result'));
+                }
+            } else if (type === 'VALIDATE_RESULT') {
+                const validation: ValidationResult = { isValid: isValid ?? false, width, height, error };
+                pending.resolve(validation);
+            } else {
+                pending.reject(new Error(`Unexpected worker response type: ${type}`));
             }
         };
 
         worker.onerror = (error) => {
             console.error('Worker error:', error);
-            // Reject all pending operations
-            pendingOperations.forEach((pending) => {
-                pending.reject(new Error('Worker crashed'));
-            });
-            pendingOperations.clear();
-
-            // Reject all queued operations that never even started
-            jobQueue.forEach(({ reject }) => {
-                reject(new Error('Worker crashed before job started'));
-            });
-            jobQueue.length = 0; // Clear queue
-
-            activeJobs = 0;
-
-            // Reset worker
-            worker?.terminate();
-            worker = null;
+            resetWorker(new Error('Worker crashed'));
         };
     }
 
@@ -104,20 +121,32 @@ function processNextJob() {
 /**
  * Enqueue a job to be sent to the worker
  */
-function enqueueJob(message: WorkerMessage, resolve: any, reject: any) {
+function enqueueJob(
+    message: WorkerMessage,
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    resolve: (value: any) => void,
+    reject: (error: Error) => void
+) {
     const job = () => {
         try {
             const w = getWorker();
-            pendingOperations.set(message.id, { resolve, reject });
+            const timer = setTimeout(() => {
+                console.warn(`Worker job ${message.id} (${message.type}) timed out after ${JOB_TIMEOUT_MS}ms`);
+                resetWorker(new Error(
+                    message.type === 'VALIDATE' ? 'Image validation timed out' : 'Image processing timed out'
+                ));
+            }, JOB_TIMEOUT_MS);
+
+            pendingOperations.set(message.id, { resolve, reject, timer });
             w.postMessage(message); // Heavy payload transfer happens here
         } catch (err) {
             activeJobs--; // Revert slot if synchronous fail (e.g. clone error)
-            reject(err);
+            reject(err instanceof Error ? err : new Error(String(err)));
             processNextJob();
         }
     };
 
-    jobQueue.push({ job, resolve, reject });
+    jobQueue.push({ job, reject });
     processNextJob();
 }
 
@@ -139,10 +168,11 @@ export function processImageAsync(file: File, options: ProcessOptions): Promise<
 }
 
 /**
- * Validate an image file using the Web Worker
- * Returns a Promise that resolves to a boolean
+ * Validate an image file using the Web Worker.
+ * Resolves with the validation verdict plus decoded dimensions (reusing the
+ * decode the validator already performs).
  */
-export function validateImageAsync(file: File): Promise<boolean> {
+export function validateImageAsync(file: File): Promise<ValidationResult> {
     return new Promise((resolve, reject) => {
         const id = generateId();
         const message: WorkerMessage = {
@@ -155,14 +185,8 @@ export function validateImageAsync(file: File): Promise<boolean> {
 }
 
 /**
- * Terminate the worker and clean up resources
+ * Terminate the worker and reject everything still pending or queued
  */
 export function terminateWorker(): void {
-    if (worker) {
-        worker.terminate();
-        worker = null;
-    }
-    pendingOperations.clear();
-    jobQueue.length = 0;
-    activeJobs = 0;
+    resetWorker(new Error('Worker terminated'));
 }

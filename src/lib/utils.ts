@@ -40,23 +40,5 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
  * Generate a unique ID for tracking images
  */
 export function generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Simple debounce function
- */
-export function debounce<F extends (...args: any[]) => any>(
-    func: F,
-    waitFor: number
-): (...args: Parameters<F>) => void {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-
-    return (...args: Parameters<F>) => {
-        if (timeout !== null) {
-            clearTimeout(timeout);
-            timeout = null;
-        }
-        timeout = setTimeout(() => func(...args), waitFor);
-    };
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }

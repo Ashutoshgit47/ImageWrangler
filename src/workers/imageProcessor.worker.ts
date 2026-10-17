@@ -45,6 +45,8 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
                     id,
                     type: 'VALIDATE_RESULT',
                     isValid: validationResult.isValid,
+                    width: validationResult.width,
+                    height: validationResult.height,
                     error: validationResult.error,
                 };
 

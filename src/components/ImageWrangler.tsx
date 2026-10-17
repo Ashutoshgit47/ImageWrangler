@@ -1,10 +1,10 @@
 /**
  * ImageWrangler - Main Application Component
- * Orchestrates image upload, processing, batch download, i18n, and developer info
+ * Orchestrates image upload, processing, batch download, and i18n
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { ImageFile, ProcessOptions } from '../lib/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ImageFile, ProcessOptions, ValidatedImage } from '../lib/types';
 import { useTranslation } from '../lib/i18n';
 import { ImageDropzone } from './ImageDropzone';
 import { ImageCard } from './ImageCard';
@@ -12,10 +12,34 @@ import { FAQ } from './FAQ';
 import { Header } from './Header';
 import { processImageAsync } from '../lib/workerManager';
 import { mergeImages } from '../lib/imageProcessor';
-import { formatBytes, generateId, cn } from '../lib/utils';
-import { Sparkles, Layers, FileDown, FolderDown, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { sanitizeFilename } from '../lib/fileValidation';
+import { generateId, cn } from '../lib/utils';
+import { Sparkles, Layers, FileDown, FolderDown, CheckSquare, Square, Trash2 } from './icons';
 import JSZip from 'jszip';
 import FloatingActionButton from './FloatingActionButton';
+
+/** Output extension for a given format */
+function outputExtension(format: ProcessOptions['format']): string {
+    return format === 'jpeg' ? 'jpg' : format;
+}
+
+/** Sanitized base name (without extension) for downloads and ZIP entries */
+function downloadBaseName(fileName: string): string {
+    const dot = fileName.lastIndexOf('.');
+    return sanitizeFilename(dot > 0 ? fileName.slice(0, dot) : fileName);
+}
+
+/** Pick a unique `<name>.<ext>` inside `usedNames` */
+function uniqueOutputName(base: string, ext: string, usedNames: Set<string>): string {
+    let finalName = base;
+    let count = 0;
+    while (usedNames.has(`${finalName}.${ext}`)) {
+        count++;
+        finalName = `${base}_${count}`;
+    }
+    usedNames.add(`${finalName}.${ext}`);
+    return `${finalName}.${ext}`;
+}
 
 export function ImageWrangler() {
     const { t } = useTranslation();
@@ -26,29 +50,50 @@ export function ImageWrangler() {
 
     // Track object URLs for memory leak prevention
     const objectUrls = useRef(new Set<string>());
-    
+
     // Concurrency and race-condition tracking
     const processingVersionRef = useRef(new Map<string, number>());
     const debounceTimeoutRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
     const imagesRef = useRef<ImageFile[]>([]);
+    const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Keep imagesRef synchronized
     useEffect(() => {
         imagesRef.current = images;
     }, [images]);
 
-    // Cleanup object URLs on unmount
+    // Cleanup object URLs and pending timers on unmount
     useEffect(() => {
         const urls = objectUrls.current;
+        const timers = debounceTimeoutRef.current;
         return () => {
             urls.forEach(url => URL.revokeObjectURL(url));
+            timers.forEach(clearTimeout);
+            timers.clear();
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
         };
     }, []);
 
-    // Toast helper
+    // Toast helper — a single tracked timer, so a new toast never gets
+    // dismissed early by a previous toast's timeout.
     const showToast = useCallback((message: string) => {
+        if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
         setToastMessage(message);
-        setTimeout(() => setToastMessage(null), 5000);
+        toastTimeoutRef.current = setTimeout(() => {
+            toastTimeoutRef.current = null;
+            setToastMessage(null);
+        }, 5000);
+    }, []);
+
+    // Cancel any debounced work and discard in-flight results for an image
+    const cancelImageWork = useCallback((id: string) => {
+        const timeout = debounceTimeoutRef.current.get(id);
+        if (timeout) {
+            clearTimeout(timeout);
+            debounceTimeoutRef.current.delete(id);
+        }
+        // Dropping the version entry makes any in-flight worker result stale
+        processingVersionRef.current.delete(id);
     }, []);
 
     // Process a single image
@@ -69,7 +114,7 @@ export function ImageWrangler() {
 
         try {
             const processedBlob = await processImageAsync(targetImage.file, targetImage.options);
-            
+
             // Discard stale async completions
             if (processingVersionRef.current.get(id) !== currentVersion) {
                 return;
@@ -113,63 +158,83 @@ export function ImageWrangler() {
         if (currentTimeout) {
             clearTimeout(currentTimeout);
         }
-        
+
         const timeout = setTimeout(() => {
+            debounceTimeoutRef.current.delete(id);
             processSingleImage(id);
         }, 500);
-        
+
         debounceTimeoutRef.current.set(id, timeout);
     }, [processSingleImage]);
 
-    // Handle new files added
-    const handleFilesAdded = useCallback(async (newFiles: File[]) => {
-        const newImageFilesPromises = newFiles.map(async (file): Promise<ImageFile> => {
-            const bitmap = await createImageBitmap(file);
-            const { width, height } = bitmap;
-            bitmap.close();
+    // Handle new files that already passed worker validation
+    const handleFilesAdded = useCallback(async (newFiles: ValidatedImage[]) => {
+        const accepted: ImageFile[] = [];
+        const rejected: string[] = [];
 
-            let format: ProcessOptions['format'] = 'jpeg';
-            const ext = file.name.split('.').pop()?.toLowerCase();
-            const mime = file.type.toLowerCase();
-            if (mime === 'image/png' || ext === 'png') format = 'png';
-            else if (mime === 'image/webp' || ext === 'webp') format = 'webp';
-            else if (mime === 'image/avif' || ext === 'avif') format = 'avif';
-            else if (mime.includes('bmp') || ext === 'bmp') format = 'bmp';
-            else format = 'jpeg';
+        for (const { file, width, height } of newFiles) {
+            try {
+                // Validation decodes in the worker and hands back dimensions;
+                // only fall back to a main-thread decode if they are missing.
+                let safeWidth = width;
+                let safeHeight = height;
+                if (!safeWidth || !safeHeight) {
+                    const bitmap = await createImageBitmap(file);
+                    safeWidth = bitmap.width;
+                    safeHeight = bitmap.height;
+                    bitmap.close();
+                }
 
-            const previewUrl = URL.createObjectURL(file);
-            objectUrls.current.add(previewUrl);
+                let format: ProcessOptions['format'] = 'jpeg';
+                const ext = file.name.split('.').pop()?.toLowerCase();
+                const mime = file.type.toLowerCase();
+                if (mime === 'image/png' || ext === 'png') format = 'png';
+                else if (mime === 'image/webp' || ext === 'webp') format = 'webp';
+                else if (mime === 'image/avif' || ext === 'avif') format = 'avif';
+                else if (mime.includes('bmp') || ext === 'bmp') format = 'bmp';
 
-            return {
-                id: generateId(),
-                file,
-                previewUrl,
-                originalWidth: width,
-                originalHeight: height,
-                status: 'pending',
-                options: {
-                    format,
-                    quality: 100, // Default to 100% to preserve original quality on ingest
-                    width,
-                    height,
-                    keepAspectRatio: true,
-                },
-            };
-        });
+                const previewUrl = URL.createObjectURL(file);
+                objectUrls.current.add(previewUrl);
 
-        const newImageFiles = await Promise.all(newImageFilesPromises);
+                accepted.push({
+                    id: generateId(),
+                    file,
+                    previewUrl,
+                    originalWidth: safeWidth,
+                    originalHeight: safeHeight,
+                    status: 'pending',
+                    options: {
+                        format,
+                        quality: 100, // Default to 100% to preserve original quality on ingest
+                        width: safeWidth,
+                        height: safeHeight,
+                        keepAspectRatio: true,
+                    },
+                });
+            } catch (error) {
+                // One unreadable file must not take down the rest of the batch
+                console.warn(`Could not read ${file.name}:`, error);
+                rejected.push(file.name);
+            }
+        }
 
-        setImages(prev => {
-            const updated = [...prev, ...newImageFiles];
-            imagesRef.current = updated;
-            return updated;
-        });
+        if (accepted.length > 0) {
+            setImages(prev => {
+                const updated = [...prev, ...accepted];
+                imagesRef.current = updated;
+                return updated;
+            });
 
-        // Trigger processing immediately for new images
-        setTimeout(() => {
-            newImageFiles.forEach(img => processSingleImage(img.id, img));
-        }, 0);
-    }, [processSingleImage]);
+            // Trigger processing immediately for new images
+            setTimeout(() => {
+                accepted.forEach(img => processSingleImage(img.id, img));
+            }, 0);
+        }
+
+        if (rejected.length > 0) {
+            showToast(t('toast_skipped_invalid', { count: rejected.length, files: rejected.join(', ') }));
+        }
+    }, [processSingleImage, showToast, t]);
 
     // Handle validation errors
     const handleValidationError = useCallback((invalidFiles: string[]) => {
@@ -190,11 +255,7 @@ export function ImageWrangler() {
 
     // Remove image
     const handleRemoveImage = useCallback((id: string) => {
-        const timeout = debounceTimeoutRef.current.get(id);
-        if (timeout) {
-            clearTimeout(timeout);
-            debounceTimeoutRef.current.delete(id);
-        }
+        cancelImageWork(id);
         setSelectedIds(prev => {
             if (prev.has(id)) {
                 const next = new Set(prev);
@@ -219,11 +280,12 @@ export function ImageWrangler() {
             imagesRef.current = next;
             return next;
         });
-    }, []);
+    }, [cancelImageWork]);
 
     // Clear all images
     const handleClearAll = useCallback(() => {
         images.forEach(image => {
+            cancelImageWork(image.id);
             if (image.previewUrl) {
                 URL.revokeObjectURL(image.previewUrl);
                 objectUrls.current.delete(image.previewUrl);
@@ -236,7 +298,7 @@ export function ImageWrangler() {
         setImages([]);
         imagesRef.current = [];
         setSelectedIds(new Set());
-    }, [images]);
+    }, [images, cancelImageWork]);
 
     // Clear only selected images
     const handleClearSelected = useCallback(() => {
@@ -244,6 +306,7 @@ export function ImageWrangler() {
 
         images.forEach(image => {
             if (selectedIds.has(image.id)) {
+                cancelImageWork(image.id);
                 if (image.previewUrl) {
                     URL.revokeObjectURL(image.previewUrl);
                     objectUrls.current.delete(image.previewUrl);
@@ -260,7 +323,7 @@ export function ImageWrangler() {
             return next;
         });
         setSelectedIds(new Set());
-    }, [images, selectedIds]);
+    }, [images, selectedIds, cancelImageWork]);
 
     // Download selected or all as ZIP
     const handleDownloadZip = async (onlySelected: boolean = false) => {
@@ -282,21 +345,9 @@ export function ImageWrangler() {
 
         imagesToDownload.forEach(image => {
             if (image.processedFile) {
-                const originalName = image.file.name.includes('.') 
-                    ? image.file.name.substring(0, image.file.name.lastIndexOf('.')) 
-                    : image.file.name || 'image';
-                
-                const ext = image.options.format === 'jpeg' ? 'jpg' : image.options.format;
-                
-                let finalName = originalName;
-                let count = 0;
-                while (usedNames.has(`${finalName}.${ext}`)) {
-                    count++;
-                    finalName = `${originalName}_${count}`;
-                }
-                usedNames.add(`${finalName}.${ext}`);
-
-                zip.file(`${finalName}.${ext}`, image.processedFile);
+                const base = downloadBaseName(image.file.name);
+                const entryName = uniqueOutputName(base, outputExtension(image.options.format), usedNames);
+                zip.file(entryName, image.processedFile);
             }
         });
 
@@ -340,23 +391,13 @@ export function ImageWrangler() {
         imagesToDownload.forEach((image, index) => {
             setTimeout(() => {
                 if (image.processedUrl) {
-                    const originalName = image.file.name.includes('.') 
-                        ? image.file.name.substring(0, image.file.name.lastIndexOf('.')) 
-                        : image.file.name || 'image';
-
-                    const ext = image.options.format === 'jpeg' ? 'jpg' : image.options.format;
-                    
-                    let finalName = originalName;
-                    let count = 0;
-                    while (usedNames.has(`${finalName}.${ext}`)) {
-                        count++;
-                        finalName = `${originalName}_${count}`;
-                    }
-                    usedNames.add(`${finalName}.${ext}`);
-
                     const a = document.createElement('a');
                     a.href = image.processedUrl;
-                    a.download = `${finalName}.${ext}`;
+                    a.download = uniqueOutputName(
+                        downloadBaseName(image.file.name),
+                        outputExtension(image.options.format),
+                        usedNames
+                    );
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -453,13 +494,13 @@ export function ImageWrangler() {
                             onFilesAdded={handleFilesAdded}
                             onValidationError={handleValidationError}
                         />
-                        {/* Donation Buttons */}
+                        {/* Support Buttons (locally hosted badges) */}
                         <div className="mt-8 flex flex-row items-center justify-center gap-4 flex-wrap">
                             <a href="https://ko-fi.com/Y8Y11V9RQ2" target="_blank" rel="noopener noreferrer">
-                                <img height="36" style={{ border: '0px', height: '36px' }} src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee at ko-fi.com" />
+                                <img height="36" style={{ border: '0px', height: '36px' }} src="/kofi-button.png" alt="Buy Me a Coffee at ko-fi.com" />
                             </a>
                             <a href="https://buymeachai.ezee.li/ashutosh47" target="_blank" rel="noopener noreferrer">
-                                <img src="/buymeachai-button.svg" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://buymeachai.ezee.li/assets/images/buymeachai-button.png'; }} alt="Buy Me A Chai" style={{ height: '36px', width: 'auto' }} />
+                                <img src="/buymeachai-button.svg" alt="Buy Me A Chai" style={{ height: '36px', width: 'auto' }} />
                             </a>
                         </div>
                     </div>
@@ -469,7 +510,7 @@ export function ImageWrangler() {
                         <div className="space-y-8 mt-6">
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-wrap items-center gap-3">
-                                    <h2 className="text-xl sm:text-2xl font-bold">
+                                    <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight">
                                         {t('your_images')} ({images.length})
                                     </h2>
                                     {selectedIds.size > 0 && (
@@ -482,7 +523,7 @@ export function ImageWrangler() {
                                     <div className="flex flex-wrap items-center sm:ml-auto gap-2">
                                         <button
                                             onClick={handleSelectAll}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors min-h-[40px]"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors min-h-[40px]"
                                         >
                                             {selectedIds.size === images.length ? <Square className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
                                             <span className="max-sm:hidden">
@@ -492,7 +533,7 @@ export function ImageWrangler() {
                                         <button
                                             onClick={() => handleDownloadIndividual(selectedIds.size > 0)}
                                             disabled={!allDone}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 transition-colors shadow-sm min-h-[40px]"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-primary hover:bg-primary-hover text-primary-foreground disabled:opacity-50 transition-colors shadow-sm min-h-[40px]"
                                         >
                                             <FileDown className="h-4 w-4" />
                                             <span className="max-sm:hidden">{t('btn_download_all')}</span>
@@ -500,7 +541,7 @@ export function ImageWrangler() {
                                         <button
                                             onClick={() => handleDownloadZip(selectedIds.size > 0)}
                                             disabled={!allDone || isZipping}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground disabled:opacity-50 transition-colors min-h-[40px]"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-secondary hover:bg-elevated text-secondary-foreground disabled:opacity-50 transition-colors min-h-[40px]"
                                         >
                                             <FolderDown className="h-4 w-4" />
                                             <span className="max-sm:hidden">{isZipping ? t('zipping') : t('btn_zip_all')}</span>
@@ -508,14 +549,14 @@ export function ImageWrangler() {
                                         <button
                                             onClick={handleMergeAll}
                                             disabled={images.length < 2 || isZipping}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-accent hover:bg-accent/80 text-accent-foreground disabled:opacity-50 transition-colors min-h-[40px]"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-accent hover:bg-accent-soft text-accent-foreground disabled:opacity-50 transition-colors min-h-[40px]"
                                         >
                                             <Layers className="h-4 w-4" />
                                             <span className="max-sm:hidden">{t('btn_merge_all')}</span>
                                         </button>
                                         <button
                                             onClick={selectedIds.size > 0 ? handleClearSelected : handleClearAll}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors min-h-[40px]"
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-destructive hover:bg-destructive-hover text-destructive-foreground transition-colors min-h-[40px]"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                             <span className="max-sm:hidden">{selectedIds.size > 0 ? t('btn_clear_selected') : t('btn_clear_all')}</span>
@@ -545,11 +586,11 @@ export function ImageWrangler() {
                             </div>
                         </div>
                     ) : (
-                        <div className="max-w-2xl mx-auto p-6 rounded-xl border border-dashed border-border bg-card/40">
+                        <div className="max-w-2xl mx-auto p-6 rounded-xl border border-dashed border-border bg-card">
                             <div className="flex items-start gap-3">
                                 <Sparkles className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                                 <div>
-                                    <h3 className="font-semibold text-base">{t('ready_title')}</h3>
+                                    <h3 className="font-display text-lg font-medium">{t('ready_title')}</h3>
                                     <p className="text-sm text-muted-foreground mt-1">
                                         {t('ready_desc')}
                                     </p>
@@ -576,7 +617,7 @@ export function ImageWrangler() {
                     {toastMessage}
                 </div>
             )}
-            
+
             {/* Mobile Floating Action Button */}
             <FloatingActionButton
                 imagesCount={images.length}

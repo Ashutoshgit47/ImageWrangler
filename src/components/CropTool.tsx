@@ -6,7 +6,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { CropRegion } from '../lib/types';
 import { cn } from '../lib/utils';
-import { RotateCcw, X } from 'lucide-react';
+import { RotateCcw, X } from './icons';
 import { useTranslation } from '../lib/i18n';
 
 interface CropToolProps {
@@ -40,12 +40,16 @@ export function CropTool({
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const [displayScale, setDisplayScale] = useState(1);
+    // Smallest crop the tool enforces — never bigger than a tiny source image
+    const minSize = Math.max(1, Math.min(50, originalWidth, originalHeight));
     const [crop, setCrop] = useState<CropRegion>(() => {
         if (initialCrop && initialCrop.width > 0 && initialCrop.height > 0) {
-            const safeW = Math.max(50, Math.min(originalWidth, initialCrop.width));
-            const safeH = Math.max(50, Math.min(originalHeight, initialCrop.height));
-            const safeX = Math.max(0, Math.min(originalWidth - safeW, initialCrop.x));
-            const safeY = Math.max(0, Math.min(originalHeight - safeH, initialCrop.y));
+            // Clamp into the image first, then apply the minimum size, so
+            // images smaller than the minimum still round-trip correctly.
+            const safeW = Math.min(originalWidth, Math.max(minSize, Math.round(initialCrop.width)));
+            const safeH = Math.min(originalHeight, Math.max(minSize, Math.round(initialCrop.height)));
+            const safeX = Math.max(0, Math.min(originalWidth - safeW, Math.round(initialCrop.x)));
+            const safeY = Math.max(0, Math.min(originalHeight - safeH, Math.round(initialCrop.y)));
             return { x: safeX, y: safeY, width: safeW, height: safeH };
         }
         return {
@@ -138,9 +142,9 @@ export function CropTool({
                     let newX = x, newY = y, newW = width, newH = height;
 
                     if (dragType === 'se') {
-                        newW = Math.max(50, width + dx);
+                        newW = Math.max(minSize, width + dx);
                         if (aspectRatio) newH = newW / aspectRatio;
-                        else newH = Math.max(50, height + dy);
+                        else newH = Math.max(minSize, height + dy);
 
                         if (newX + newW > originalWidth) {
                             newW = originalWidth - newX;
@@ -152,9 +156,9 @@ export function CropTool({
                         }
 
                     } else if (dragType === 'sw') {
-                        newW = Math.max(50, width - dx);
+                        newW = Math.max(minSize, width - dx);
                         if (aspectRatio) newH = newW / aspectRatio;
-                        else newH = Math.max(50, height + dy);
+                        else newH = Math.max(minSize, height + dy);
 
                         if (newY + newH > originalHeight) {
                             newH = originalHeight - newY;
@@ -170,9 +174,9 @@ export function CropTool({
                         }
 
                     } else if (dragType === 'ne') {
-                        newW = Math.max(50, width + dx);
+                        newW = Math.max(minSize, width + dx);
                         if (aspectRatio) newH = newW / aspectRatio;
-                        else newH = Math.max(50, height - dy);
+                        else newH = Math.max(minSize, height - dy);
 
                         if (newX + newW > originalWidth) {
                             newW = originalWidth - newX;
@@ -188,9 +192,9 @@ export function CropTool({
                         }
 
                     } else if (dragType === 'nw') {
-                        newW = Math.max(50, width - dx);
+                        newW = Math.max(minSize, width - dx);
                         if (aspectRatio) newH = newW / aspectRatio;
-                        else newH = Math.max(50, height - dy);
+                        else newH = Math.max(minSize, height - dy);
 
                         const rightEdge = x + width;
                         const bottomEdge = y + height;
@@ -209,7 +213,7 @@ export function CropTool({
                         }
 
                     } else if (dragType === 'e') {
-                        newW = Math.max(50, width + dx);
+                        newW = Math.max(minSize, width + dx);
 
                         if (newX + newW > originalWidth) {
                             newW = originalWidth - newX;
@@ -223,7 +227,7 @@ export function CropTool({
                         }
 
                     } else if (dragType === 'w') {
-                        newW = Math.max(50, width - dx);
+                        newW = Math.max(minSize, width - dx);
                         const rightEdge = x + width;
                         newX = rightEdge - newW;
 
@@ -241,7 +245,7 @@ export function CropTool({
                         }
 
                     } else if (dragType === 's') {
-                        newH = Math.max(50, height + dy);
+                        newH = Math.max(minSize, height + dy);
 
                         if (newY + newH > originalHeight) {
                             newH = originalHeight - newY;
@@ -255,7 +259,7 @@ export function CropTool({
                         }
 
                     } else if (dragType === 'n') {
-                        newH = Math.max(50, height - dy);
+                        newH = Math.max(minSize, height - dy);
                         const bottomEdge = y + height;
                         newY = bottomEdge - newH;
 
@@ -274,8 +278,8 @@ export function CropTool({
                     }
 
                     // Final Bound Clamp safety
-                    newW = Math.max(50, Math.min(originalWidth, newW));
-                    newH = Math.max(50, Math.min(originalHeight, newH));
+                    newW = Math.max(minSize, Math.min(originalWidth, newW));
+                    newH = Math.max(minSize, Math.min(originalHeight, newH));
                     newX = Math.max(0, Math.min(originalWidth - newW, newX));
                     newY = Math.max(0, Math.min(originalHeight - newH, newY));
 
@@ -348,8 +352,8 @@ export function CropTool({
                 return {
                     x: Math.round(targetX),
                     y: Math.round(targetY),
-                    width: Math.max(50, Math.round(targetW)),
-                    height: Math.max(50, Math.round(targetH)),
+                    width: Math.max(minSize, Math.round(targetW)),
+                    height: Math.max(minSize, Math.round(targetH)),
                 };
             });
         }
@@ -381,18 +385,18 @@ export function CropTool({
     const edgeClass = "absolute bg-transparent touch-none";
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-accent/90 flex items-center justify-center p-2 sm:p-4">
             <div className="bg-card rounded-lg w-full max-w-3xl max-h-[95vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-border">
-                    <h3 className="text-base font-semibold">{t('crop_title')}</h3>
-                    <button onClick={onCancel} className="p-1 rounded hover:bg-muted">
+                    <h3 className="font-display text-lg font-medium">{t('crop_title')}</h3>
+                    <button onClick={onCancel} className="p-1 rounded hover:bg-elevated" aria-label={t('crop_cancel')}>
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
                 {/* Aspect Ratio Buttons */}
-                <div className="flex flex-wrap gap-1 p-2 border-b border-border bg-muted/30">
+                <div className="flex flex-wrap gap-1 p-2 border-b border-border bg-elevated">
                     {ASPECT_RATIOS.map((ar) => (
                         <button
                             key={ar.label}
@@ -417,9 +421,9 @@ export function CropTool({
                 </div>
 
                 {/* Crop Area */}
-                <div ref={containerRef} className="flex-1 relative p-4 flex justify-center items-center overflow-hidden bg-black/50">
+                <div ref={containerRef} className="flex-1 relative p-4 flex justify-center items-center overflow-hidden bg-accent/50">
                     <div
-                        className="relative"
+                        className="relative touch-none"
                         style={{
                             width: originalWidth * displayScale,
                             height: originalHeight * displayScale,
@@ -435,7 +439,7 @@ export function CropTool({
 
                         {/* Crop Overlay (visible portion) */}
                         <div
-                            className="absolute border-2 border-primary cursor-move overflow-hidden shadow-lg select-none"
+                            className="absolute border-2 border-primary cursor-move touch-none overflow-hidden shadow-lg select-none"
                             style={{
                                 left: crop.x * displayScale,
                                 top: crop.y * displayScale,
@@ -534,13 +538,13 @@ export function CropTool({
                     <div className="flex gap-2">
                         <button
                             onClick={onCancel}
-                            className="px-3 py-1.5 text-sm rounded bg-muted hover:bg-muted/80 transition-colors"
+                            className="px-3 py-1.5 text-sm rounded border border-border bg-background hover:bg-elevated transition-colors"
                         >
                             {t('crop_cancel')}
                         </button>
                         <button
                             onClick={handleSave}
-                            className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            className="px-3 py-1.5 text-sm rounded bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
                         >
                             {t('crop_apply')}
                         </button>

@@ -3,70 +3,83 @@
 @tailwind utilities;
 
 /* ============================================
-   ImageWrangler — Professional Dark Theme
-   Based on Deep Charcoal, Refined Teal, Muted Mint
+   ImageWrangler — Warm Editorial Theme
+   Cream canvas, coral primary, dark ink surfaces
    ============================================ */
 
 :root {
-  /* ── Brand / Primary ── */
-  --color-primary: #2BBBAD;
-  --color-primary-hover: #239F94;
-  --color-primary-active: #1C7F77;
-  --color-primary-foreground: #1B2226;
+  /* ── Brand / Primary (coral) ── */
+  --color-primary: #cc785c;
+  --color-primary-hover: #a9583e;
+  --color-primary-active: #a9583e;
+  --color-primary-foreground: #ffffff;
 
   /* ── Text ── */
-  --color-foreground: #E6ECEF;
-  --color-secondary-text: #B4C0C6;
-  --color-muted-foreground: #8A989F;
-  --color-disabled-text: #5E6B72;
+  --color-foreground: #3d3d3a;
+  --color-secondary-text: #6c6a64;
+  --color-muted-foreground: #6c6a64;
+  --color-disabled-text: #8e8b82;
 
   /* ── Background & Surface ── */
-  --color-background: #1B2226;
-  --color-card: #222C31;
-  --color-card-foreground: #E6ECEF;
-  --color-elevated: #2A363C;
-  --color-overlay: #1E262B;
-  --color-border: #344248;
+  --color-background: #faf9f5;
+  --color-card: #f5f0e8;
+  --color-card-foreground: #141413;
+  --color-elevated: #efe9de;
+  --color-overlay: #efe9de;
+  --color-border: #e6dfd8;
 
-  /* ── Accent / Secondary ── */
-  --color-accent: #9ED9C7;
-  --color-accent-soft: #BFE8DC;
-  --color-accent-disabled: #6E9E92;
-  --color-accent-foreground: #1B2226;
+  /* ── Accent / Secondary (dark ink surface) ── */
+  --color-accent: #181715;
+  --color-accent-soft: #252320;
+  --color-accent-disabled: #8e8b82;
+  --color-accent-foreground: #faf9f5;
 
   /* ── Status & Feedback ── */
-  --color-success: #3FAF8E;
-  --color-warning: #D6A84A;
-  --color-destructive: #D16666;
-  --color-info: #5FA8C6;
-  --color-destructive-foreground: #E6ECEF;
+  --color-success: #3f7a4e;
+  --color-warning: #8a6a10;
+  --color-destructive: #b03d3d;
+  --color-destructive-hover: #933232;
+  --color-info: #3f7f73;
+  --color-destructive-foreground: #ffffff;
 
   /* ── Interactive & Utility ── */
-  --color-ring: #9ED9C7;
-  --color-ring-shadow: rgba(158, 217, 199, 0.25);
-  --color-disabled-surface: #2F3B41;
-  --color-hover-surface: #2E3A40;
-  --color-drag-overlay: rgba(43, 187, 173, 0.12);
+  --color-ring: #cc785c;
+  --color-ring-shadow: rgba(204, 120, 92, 0.18);
+  --color-disabled-surface: #efe9de;
+  --color-hover-surface: #efe9de;
+  --color-drag-overlay: rgba(204, 120, 92, 0.10);
 
   /* ── Form Elements ── */
-  --color-input: #222C31;
-  --color-input-border: #344248;
-  --color-input-focus: #2BBBAD;
-  --color-placeholder: #7C8A91;
+  --color-input: #faf9f5;
+  --color-input-border: #e6dfd8;
+  --color-input-focus: #cc785c;
+  --color-placeholder: #8e8b82;
 
   /* ── Aliases ── */
-  --color-secondary: #2A363C;
-  --color-secondary-foreground: #E6ECEF;
-  --color-muted: #222C31;
+  --color-secondary: #f5f0e8;
+  --color-secondary-foreground: #141413;
+  --color-muted: #f5f0e8;
+
+  /* ── Typography ── */
+  --font-display: 'Cormorant Garamond', 'Tiempos Headline', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @layer base {
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Serif display voice for page-level headings only */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.02em;
   }
 
   *,
@@ -100,34 +113,34 @@
   }
 
   ::selection {
-    background-color: var(--color-accent);
-    color: var(--color-background);
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
   }
 }
 
 @layer components {
   .badge-success {
-    background-color: rgba(63, 175, 142, 0.2);
+    background-color: rgba(63, 122, 78, 0.12);
     color: var(--color-success);
-    border: 1px solid rgba(63, 175, 142, 0.3);
+    border: 1px solid rgba(63, 122, 78, 0.28);
   }
 
   .badge-warning {
-    background-color: rgba(214, 168, 74, 0.2);
+    background-color: rgba(212, 160, 23, 0.14);
     color: var(--color-warning);
-    border: 1px solid rgba(214, 168, 74, 0.3);
+    border: 1px solid rgba(212, 160, 23, 0.32);
   }
 
   .badge-error {
-    background-color: rgba(209, 102, 102, 0.2);
+    background-color: rgba(176, 61, 61, 0.12);
     color: var(--color-destructive);
-    border: 1px solid rgba(209, 102, 102, 0.3);
+    border: 1px solid rgba(176, 61, 61, 0.28);
   }
 
   .badge-info {
-    background-color: rgba(95, 168, 198, 0.2);
+    background-color: rgba(63, 127, 115, 0.12);
     color: var(--color-info);
-    border: 1px solid rgba(95, 168, 198, 0.3);
+    border: 1px solid rgba(63, 127, 115, 0.28);
   }
 }
 
@@ -260,74 +273,70 @@
     border-color: var(--color-accent);
   }
 
+  /* ── Translucent tints Tailwind cannot derive from CSS variables ── */
   .bg-primary\/10 {
-    background-color: rgba(43, 187, 173, 0.1);
-  }
-
-  .bg-primary\/20 {
-    background-color: rgba(43, 187, 173, 0.2);
-  }
-
-  .bg-accent\/10 {
-    background-color: rgba(158, 217, 199, 0.1);
+    background-color: rgba(204, 120, 92, 0.10);
   }
 
   .bg-accent\/20 {
-    background-color: rgba(158, 217, 199, 0.2);
+    background-color: rgba(24, 23, 21, 0.20);
+  }
+
+  .bg-accent\/50 {
+    background-color: rgba(24, 23, 21, 0.50);
+  }
+
+  .bg-accent\/80 {
+    background-color: rgba(24, 23, 21, 0.80);
+  }
+
+  .bg-accent\/90 {
+    background-color: rgba(24, 23, 21, 0.90);
   }
 
   .bg-muted\/30 {
-    background-color: rgba(34, 44, 49, 0.3);
-  }
-
-  .bg-muted\/50 {
-    background-color: rgba(34, 44, 49, 0.5);
-  }
-
-  .bg-background\/60 {
-    background-color: rgba(27, 34, 38, 0.6);
-  }
-
-  .bg-background\/80 {
-    background-color: rgba(27, 34, 38, 0.8);
+    background-color: rgba(245, 240, 232, 0.55);
   }
 
   .bg-background\/95 {
-    background-color: rgba(27, 34, 38, 0.95);
+    background-color: rgba(250, 249, 245, 0.95);
   }
 
   .border-border\/50 {
-    border-color: rgba(52, 66, 72, 0.5);
+    border-color: rgba(230, 223, 216, 0.70);
   }
 
   .border-primary\/50 {
-    border-color: rgba(43, 187, 173, 0.5);
+    border-color: rgba(204, 120, 92, 0.50);
   }
 
-  .bg-gradient-to-r {
-    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+  .text-muted-foreground\/60 {
+    color: rgba(108, 106, 100, 0.75);
   }
 
-  .from-primary {
-    --tw-gradient-from: var(--color-primary);
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(43, 187, 173, 0));
+  .ring-border\/50 {
+    --tw-ring-color: rgba(230, 223, 216, 0.70);
   }
 
-  .to-accent {
-    --tw-gradient-to: var(--color-accent);
+  .ring-primary\/30 {
+    --tw-ring-color: rgba(204, 120, 92, 0.30);
   }
 
-  .bg-clip-text {
-    -webkit-background-clip: text;
-    background-clip: text;
+  .ring-primary\/50 {
+    --tw-ring-color: rgba(204, 120, 92, 0.50);
   }
 
-  .text-transparent {
-    color: transparent;
+  /* ── Hover variants for the same tints ── */
+  .hover\:bg-destructive\/90:hover {
+    background-color: rgba(176, 61, 61, 0.90);
   }
 
-  .ring-ring {
-    --tw-ring-color: var(--color-ring);
+  .hover\:bg-muted\/30:hover {
+    background-color: rgba(245, 240, 232, 0.55);
+  }
+
+  .hover\:border-primary\/50:hover {
+    border-color: rgba(204, 120, 92, 0.50);
   }
 }
 

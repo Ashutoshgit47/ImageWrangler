@@ -4,14 +4,21 @@
  */
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud } from './icons';
 import { cn } from '../lib/utils';
-import { validateImageFile } from '../lib/fileValidation';
+import { validateImageAsync } from '../lib/workerManager';
+import type { ValidatedImage } from '../lib/types';
 import { useTranslation } from '../lib/i18n';
 
 interface ImageDropzoneProps {
-    onFilesAdded: (files: File[]) => void;
+    onFilesAdded: (files: ValidatedImage[]) => void;
     onValidationError?: (invalidFiles: string[]) => void;
+}
+
+/** True when the paste target is a text field, so clipboard pasting keeps working there */
+function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 }
 
 export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzoneProps) {
@@ -23,17 +30,23 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
         if (!files || files.length === 0) return;
 
         const imageFiles = Array.from(files);
-        const validFiles: File[] = [];
+        const validFiles: ValidatedImage[] = [];
         const invalidFiles: string[] = [];
 
-        // Validate each file
+        // Validate one file at a time in the worker: a single decode in flight,
+        // no memory spikes, and a bad file cannot reject the whole batch.
         for (const file of imageFiles) {
-            const result = await validateImageFile(file);
-            if (result.isValid) {
-                validFiles.push(file);
-            } else {
+            try {
+                const result = await validateImageAsync(file);
+                if (result.isValid) {
+                    validFiles.push({ file, width: result.width ?? 0, height: result.height ?? 0 });
+                } else {
+                    invalidFiles.push(file.name);
+                    console.warn(`Invalid file: ${file.name} - ${result.error}`);
+                }
+            } catch (error) {
                 invalidFiles.push(file.name);
-                console.warn(`Invalid file: ${file.name} - ${result.error}`);
+                console.warn(`Validation failed for ${file.name}:`, error);
             }
         }
 
@@ -55,7 +68,7 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
     const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        // Bug D fix: only clear isDragging if cursor left the dropzone entirely,
+        // Only clear isDragging if the cursor left the dropzone entirely,
         // not when moving over a child element inside it.
         if (e.currentTarget.contains(e.relatedTarget as Node)) return;
         setIsDragging(false);
@@ -74,7 +87,9 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
     };
 
     const handlePaste = useCallback(async (event: ClipboardEvent) => {
-        if (!event.clipboardData) return;
+        // Never hijack a paste aimed at a text field
+        if (isEditableTarget(event.target) || !event.clipboardData) return;
+
         const pastedFiles: File[] = [];
 
         if (event.clipboardData.files && event.clipboardData.files.length > 0) {
@@ -120,7 +135,7 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
             className={cn(
                 "relative flex flex-col items-center justify-center w-full p-8 lg:p-10 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 ease-in-out transform",
                 isDragging
-                    ? "border-primary bg-primary/10 scale-[1.02] shadow-xl"
+                    ? "border-primary bg-primary/10 scale-[1.02] shadow-lg"
                     : "border-border/50 hover:border-primary/50 hover:bg-muted/30 hover:scale-[1.01]"
             )}
             onDragEnter={handleDragEnter}
@@ -142,15 +157,15 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
                 className="hidden"
                 onChange={(e) => {
                     handleFiles(e.target.files);
-                    // Bug C fix: reset value so picking the same file again triggers onChange
+                    // Reset value so picking the same file again triggers onChange
                     e.target.value = '';
                 }}
                 aria-hidden="true"
             />
             <div className="flex flex-col items-center justify-center text-center space-y-5 animate-in fade-in zoom-in duration-500">
                 <div className={cn(
-                    "p-4 rounded-full bg-background/50 ring-1 ring-border/50 transition-all duration-300",
-                    isDragging ? "bg-primary/20 ring-primary/50 scale-110" : ""
+                    "p-4 rounded-full bg-card ring-1 ring-border/50 transition-all duration-300",
+                    isDragging ? "bg-primary/10 ring-primary/50 scale-110" : ""
                 )}>
                     <UploadCloud
                         className={cn(
@@ -160,7 +175,7 @@ export function ImageDropzone({ onFilesAdded, onValidationError }: ImageDropzone
                     />
                 </div>
                 <div>
-                    <p className="text-xl font-semibold mb-1">
+                    <p className="font-display text-2xl font-medium tracking-tight mb-1">
                         {t('dropzone_title')}
                     </p>
                     <p className="text-sm text-muted-foreground">

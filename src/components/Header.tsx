@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '../lib/i18n';
-import { Github, ChevronDown, Globe, Check } from 'lucide-react';
+import { Github, ChevronDown, Globe, Check } from './icons';
 import { cn } from '../lib/utils';
 
 export function Header() {
-    const { t, currentLocale, changeLocale, locales } = useTranslation();
+    const { currentLocale, changeLocale, locales } = useTranslation();
     const [isVisible, setIsVisible] = useState(true);
     const [isLangOpen, setIsLangOpen] = useState(false);
     const lastScrollY = useRef(0);
@@ -61,7 +61,7 @@ export function Header() {
                 {/* Brand */}
                 <a href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                     <img src="/favicon.svg" alt="ImageWrangler Logo" className="h-7 w-7" />
-                    <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    <span className="font-display text-xl font-medium tracking-tight text-primary">
                         ImageWrangler
                     </span>
                 </a>
@@ -72,7 +72,7 @@ export function Header() {
                     <div className="relative" ref={langMenuRef}>
                         <button
                             onClick={() => setIsLangOpen(!isLangOpen)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-card hover:bg-muted text-xs font-medium transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-card hover:bg-elevated text-xs font-medium transition-colors"
                             aria-expanded={isLangOpen}
                             aria-label="Select language"
                         >
@@ -98,7 +98,7 @@ export function Header() {
                                                 "w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs text-left transition-colors",
                                                 currentLocale === loc.code
                                                     ? "bg-primary text-primary-foreground font-semibold"
-                                                    : "hover:bg-muted text-foreground"
+                                                    : "hover:bg-elevated text-foreground"
                                             )}
                                         >
                                             <span>{loc.nativeName}</span>
@@ -117,7 +117,7 @@ export function Header() {
                         href="https://github.com/Ashutoshgit47/ImageWrangler"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-elevated text-secondary-foreground transition-colors"
                         title="GitHub Repository"
                     >
                         <Github className="h-3.5 w-3.5" />

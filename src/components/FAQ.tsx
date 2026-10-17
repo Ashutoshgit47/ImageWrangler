@@ -3,8 +3,8 @@
  * Dynamic FAQ section with accordion and multi-language support
  */
 
-import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown } from './icons';
 import { cn } from '../lib/utils';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
 
@@ -71,7 +71,7 @@ export function FAQ() {
 
     return (
         <section id="faq" className="w-full max-w-3xl mx-auto scroll-mt-20" aria-labelledby="faq-heading">
-            <h2 id="faq-heading" className="text-2xl sm:text-3xl font-bold text-center mb-8">
+            <h2 id="faq-heading" className="font-display text-3xl sm:text-4xl font-medium tracking-tight text-center mb-8">
                 {t('faq_heading')}
             </h2>
             <div className="space-y-0">

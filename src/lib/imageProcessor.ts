@@ -5,7 +5,7 @@
  */
 
 import { encodeBMP } from './bmpEncoder';
-import { type ProcessOptions, type CropRegion, SecurityConstants } from './types';
+import { type ProcessOptions, SecurityConstants } from './types';
 
 function createCanvas(width: number, height: number): OffscreenCanvas | HTMLCanvasElement {
   if (typeof OffscreenCanvas !== 'undefined') {
@@ -274,98 +274,3 @@ export async function mergeImages(files: (File | Blob)[]): Promise<Blob> {
   }
 }
 
-/**
- * Get image dimensions from a File
- */
-export async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-    let bitmap: ImageBitmap | null = null;
-    try {
-        bitmap = await createImageBitmap(file);
-        return { width: bitmap.width, height: bitmap.height };
-    } finally {
-        if (bitmap) bitmap.close();
-    }
-}
-
-/**
- * Calculate new dimensions while maintaining aspect ratio
- */
-export function calculateAspectRatioDimensions(
-  sourceWidth: number,
-  sourceHeight: number,
-  targetWidth: number,
-  targetHeight: number,
-  lockAspect: boolean,
-  changedDimension: 'width' | 'height'
-): { width: number; height: number } {
-  const safeTargetW = Math.max(1, Math.round(targetWidth));
-  const safeTargetH = Math.max(1, Math.round(targetHeight));
-
-  if (!lockAspect || sourceHeight <= 0 || sourceWidth <= 0) {
-    return { width: safeTargetW, height: safeTargetH };
-  }
-
-  const aspectRatio = sourceWidth / sourceHeight;
-
-  if (changedDimension === 'width') {
-    return {
-      width: safeTargetW,
-      height: Math.max(1, Math.round(safeTargetW / aspectRatio)),
-    };
-  } else {
-    return {
-      width: Math.max(1, Math.round(safeTargetH * aspectRatio)),
-      height: safeTargetH,
-    };
-  }
-}
-
-/**
- * Create a crop region that covers the full image at a given aspect ratio
- */
-export function createCenteredCrop(
-  imageWidth: number,
-  imageHeight: number,
-  aspectRatio?: number
-): CropRegion {
-  if (!aspectRatio) {
-    return {
-      x: 0,
-      y: 0,
-      width: imageWidth,
-      height: imageHeight,
-    };
-  }
-
-  if (imageWidth === 0 || imageHeight === 0) {
-    return {
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-    };
-  }
-
-  let cropWidth: number;
-  let cropHeight: number;
-
-  const imageAspect = imageWidth / imageHeight;
-
-  if (imageAspect > aspectRatio) {
-    cropHeight = imageHeight;
-    cropWidth = cropHeight * aspectRatio;
-  } else {
-    cropWidth = imageWidth;
-    cropHeight = cropWidth / aspectRatio;
-  }
-
-  const safeW = Math.max(1, Math.round(cropWidth));
-  const safeH = Math.max(1, Math.round(cropHeight));
-
-  return {
-    x: Math.max(0, Math.round((imageWidth - safeW) / 2)),
-    y: Math.max(0, Math.round((imageHeight - safeH) / 2)),
-    width: safeW,
-    height: safeH,
-  };
-}

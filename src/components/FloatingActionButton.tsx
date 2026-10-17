@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
-import { Plus, CheckSquare, FileDown, FolderDown, Layers, Trash2, UploadCloud } from 'lucide-react';
+import { Plus, CheckSquare, FileDown, FolderDown, Layers, Trash2, FileUpload } from './icons';
 import { useTranslation } from '../lib/i18n';
 
 interface FloatingActionButtonProps {
@@ -78,44 +78,44 @@ export function FloatingActionButton({
   const menuItems = [
     {
       label: t('btn_add_images'),
-      icon: UploadCloud,
+      icon: FileUpload,
       onClick: () => handleAction(onAddImages),
-      colorClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+      colorClass: 'bg-accent hover:bg-accent-soft text-accent-foreground',
       disabled: false,
     },
     {
       label: selectedCount === imagesCount ? t('btn_deselect_all') : t('btn_select_all'),
       icon: CheckSquare,
       onClick: () => handleAction(onSelectAll),
-      colorClass: 'bg-muted hover:bg-muted/80 text-foreground',
+      colorClass: 'bg-card hover:bg-elevated text-foreground border border-border',
       disabled: false,
     },
     {
       label: t('btn_download_all'),
       icon: FileDown,
       onClick: () => handleAction(onDownloadAll),
-      colorClass: 'bg-primary hover:bg-primary/90 text-primary-foreground',
+      colorClass: 'bg-primary hover:bg-primary-hover text-primary-foreground',
       disabled: !allDone,
     },
     {
       label: isZipping ? t('zipping') : t('btn_zip_all'),
       icon: FolderDown,
       onClick: () => handleAction(onZipAll),
-      colorClass: 'bg-secondary hover:bg-secondary/80 text-secondary-foreground',
+      colorClass: 'bg-secondary hover:bg-elevated text-secondary-foreground border border-border',
       disabled: !allDone || isZipping,
     },
     {
       label: t('btn_merge_all'),
       icon: Layers,
       onClick: () => handleAction(onMergeAll),
-      colorClass: 'bg-accent hover:bg-accent/80 text-accent-foreground',
+      colorClass: 'bg-accent hover:bg-accent-soft text-accent-foreground',
       disabled: imagesCount < 2 || isZipping,
     },
     {
       label: selectedCount > 0 ? t('btn_clear_selected') : t('btn_clear_all'),
       icon: Trash2,
       onClick: () => handleAction(onClearAll),
-      colorClass: 'bg-destructive hover:bg-destructive/90 text-destructive-foreground',
+      colorClass: 'bg-destructive hover:bg-destructive-hover text-destructive-foreground',
       disabled: false,
     },
   ];
@@ -151,10 +151,9 @@ export function FloatingActionButton({
         onClick={toggleMenu}
         className={cn(
           'w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 min-h-[48px] min-w-[48px]',
-          'bg-gradient-to-br from-primary to-accent text-primary-foreground',
-          'hover:shadow-xl hover:scale-110 active:scale-95',
-          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',
-          isOpen && 'rotate-45'
+          'bg-primary text-primary-foreground',
+          'hover:bg-primary-hover hover:shadow-xl hover:scale-110 active:scale-95',
+          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background'
         )}
         aria-label={isOpen ? 'Close menu' : 'Open actions menu'}
         aria-expanded={isOpen}
@@ -164,7 +163,7 @@ export function FloatingActionButton({
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10 sm:hidden"
+          className="fixed inset-0 bg-accent/20 backdrop-blur-sm -z-10 sm:hidden"
           onClick={closeMenu}
         />
       )}

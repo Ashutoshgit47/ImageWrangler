@@ -1,5 +1,11 @@
 ---
 import "../styles/global.css";
+// Self-hosted fonts: no external requests, works fully offline
+import "@fontsource/cormorant-garamond/400.css";
+import "@fontsource/cormorant-garamond/500.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
 
 export interface Props {
   title?: string;
@@ -11,43 +17,91 @@ const {
   description = "A free, 100% private, client-side image tool. Compress, resize, and convert AVIF, JPG, PNG, WebP, and BMP images without uploading them to a server. Secure, fast, and privacy-first.",
 } = Astro.props;
 
-const appUrl = "https://imagewrangler.pages.dev";
+const appUrl = Astro.site?.href ?? "https://imagewrangler.pages.dev/";
 
-// FAQ Schema for SEO
+// FAQ Schema for SEO — mirrors the visible FAQ section
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   mainEntity: [
     {
       "@type": "Question",
-      name: "Are my images uploaded to a server?",
+      name: "Are my images uploaded to any server?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. ImageWrangler is a 100% client-side application. All image processing happens directly in your browser. Your files never leave your device.",
+        text: "No. ImageWrangler is strictly 100% client-side. Decoding, compression, and conversions happen in your browser memory using Web Workers and HTML5 Canvas. Your files never leave your device.",
       },
     },
     {
       "@type": "Question",
-      name: "Is ImageWrangler free to use?",
+      name: "Which image formats are supported?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, ImageWrangler is completely free to use. There are no hidden costs, subscriptions, or advertisements.",
+        text: "You can convert across AVIF, WebP, JPEG, PNG, and BMP. You can also import animated GIFs (which export as static first frames).",
       },
     },
     {
       "@type": "Question",
-      name: "What image formats are supported?",
+      name: "Why use AVIF or WebP over JPEG/PNG?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "ImageWrangler supports reading and converting to AVIF, JPG, PNG, WebP, and BMP. All processing happens securely in your browser.",
+        text: "AVIF and WebP deliver superior compression efficiency, producing 30% to 50% smaller file sizes than traditional JPEG and PNG while preserving sharp visual quality.",
       },
     },
     {
       "@type": "Question",
-      name: "Does this tool work offline?",
+      name: "What if my browser does not support AVIF export?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. After the initial page load, ImageWrangler can function completely offline. You can process images without an active internet connection.",
+        text: "AVIF export relies on browser canvas encoding (supported in Chrome 116+ and modern Edge). If your browser does not yet support AVIF canvas export, ImageWrangler will alert you to choose WebP or JPEG.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How does Target File Size (KB/MB) mode work?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "It uses an automated binary-search optimization loop across canvas compression levels (down to ±0.4% precision) to hit your target file weight without guesswork.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does converting between formats reduce quality?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Converting from PNG to lossless formats keeps original pixel data intact. Converting between lossy formats (JPEG to WebP/AVIF) re-encodes pixels, so setting quality to 85%+ or matching target size is recommended.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How does the Merge All feature work?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Merge All arranges all your loaded images into a balanced square grid (e.g., 4 images become a 2x2 grid) on a clean white canvas, exporting a single consolidated image ready for download.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I batch process and download images as a ZIP?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes! Drag and drop multiple images at once, customize individual or bulk settings, and click \"ZIP All\" (or \"ZIP Selected\") to bundle everything into a single archive.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does ImageWrangler work offline?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Once loaded, ImageWrangler requires no internet connection. All processing logic and workers run locally on your device.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What are the maximum resolution and file size limits?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Files up to 100MB and resolutions up to 15,000 × 15,000 pixels (50 megapixels) are supported. These limits prevent memory exhaustion and browser tab crashes.",
       },
     },
   ],
@@ -55,11 +109,13 @@ const faqSchema = {
 ---
 
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#faf9f5" />
 
     <!-- SEO Meta Tags -->
     <meta name="robots" content="index, follow" />
@@ -72,10 +128,6 @@ const faqSchema = {
     <meta
       name="google-site-verification"
       content="5jhD5jimxXLLwDPE3Tf0DTh3f5Fziy0CVbkLmWwKbMU"
-    />
-    <meta
-      name="google-site-verification"
-      content="cd5eb7d2ae7ba6ca"
     />
 
     <!-- Open Graph -->
@@ -93,22 +145,12 @@ const faqSchema = {
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
     <!-- JSON-LD Schema -->
     <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
 
     <title>{title}</title>
   </head>
-  <body
-    class="min-h-screen bg-background text-foreground font-[Inter,sans-serif] antialiased"
-  >
+  <body class="min-h-screen bg-background text-foreground antialiased">
     <slot />
   </body>
 </html>

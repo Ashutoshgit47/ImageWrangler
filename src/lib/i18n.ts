@@ -3,7 +3,7 @@
  * Deep module providing translation and locale persistence across the app.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 export type Locale = 'en' | 'es' | 'fr' | 'de' | 'hi' | 'ja' | 'zh' | 'pt';
 
@@ -29,9 +29,6 @@ export const translations = {
     // App Branding & Navigation
     app_title: 'ImageWrangler',
     app_tagline: 'Compress, Resize & Convert Images Offline',
-    nav_about_dev: 'About Dev',
-    nav_faq: 'FAQ',
-    nav_github: 'GitHub',
 
     // Dropzone
     dropzone_title: 'Drag & drop images here',
@@ -101,18 +98,9 @@ export const translations = {
     toast_skipped_invalid: 'Skipped {count} invalid file(s): {files}',
 
     // About Developer
-    about_dev_title: 'About the Developer',
-    about_dev_subtitle: 'Created with privacy and performance in mind',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: 'Full Stack Engineer & Open Source Builder',
-    about_dev_bio: 'Passionate about privacy-first web utilities, client-side engineering, and high-performance tools that give users complete ownership of their data.',
-    about_dev_github: 'GitHub Profile',
-    about_dev_portfolio: 'Personal Website',
-    about_dev_support: 'Support the project:',
 
     // Footer
     footer_text: '© {year} ImageWrangler. All Rights Reserved. Client-side processing — your files never leave your device.',
-    footer_dev: 'Built by Ashutosh',
 
     // FAQ Section
     faq_heading: 'Frequently Asked Questions',
@@ -140,9 +128,6 @@ export const translations = {
   es: {
     app_title: 'ImageWrangler',
     app_tagline: 'Comprime, redimensiona y convierte imágenes sin conexión',
-    nav_about_dev: 'Sobre el autor',
-    nav_faq: 'Preguntas',
-    nav_github: 'GitHub',
     dropzone_title: 'Arrastra y suelta imágenes aquí',
     dropzone_subtitle: 'o haz clic para seleccionar de tu dispositivo',
     dropzone_privacy: '100% en el navegador. Tus fotos nunca salen de tu dispositivo.',
@@ -196,16 +181,7 @@ export const translations = {
     toast_process_failed: 'Error al procesar la imagen',
     toast_zip_failed: 'Error al crear el archivo ZIP',
     toast_skipped_invalid: 'Se omitieron {count} archivo(s) no válidos: {files}',
-    about_dev_title: 'Sobre el Desarrollador',
-    about_dev_subtitle: 'Creado pensando en privacidad y rendimiento',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: 'Ingeniero Full Stack & Creador Open Source',
-    about_dev_bio: 'Apasionado por utilidades web privadas, ingeniería en el navegador y herramientas de alto rendimiento donde el usuario controla sus datos.',
-    about_dev_github: 'Perfil de GitHub',
-    about_dev_portfolio: 'Sitio Web Personal',
-    about_dev_support: 'Apoya el proyecto:',
     footer_text: '© {year} ImageWrangler. Todos los derechos reservados. Procesamiento local — tus archivos no salen de tu equipo.',
-    footer_dev: 'Desarrollado por Ashutosh',
     faq_heading: 'Preguntas Frecuentes',
     faq_q1: '¿Mis imágenes se suben a algún servidor?',
     faq_a1: 'No. ImageWrangler es 100% local en tu navegador. Tus fotos nunca salen de tu ordenador ni se envían por la red.',
@@ -231,9 +207,6 @@ export const translations = {
   fr: {
     app_title: 'ImageWrangler',
     app_tagline: 'Compressez, redimensionnez et convertissez hors-ligne',
-    nav_about_dev: 'À propos',
-    nav_faq: 'FAQ',
-    nav_github: 'GitHub',
     dropzone_title: 'Glissez-déposez des images ici',
     dropzone_subtitle: 'ou cliquez pour sélectionner sur votre appareil',
     dropzone_privacy: '100% dans le navigateur. Vos fichiers restent sur votre machine.',
@@ -287,16 +260,7 @@ export const translations = {
     toast_process_failed: 'Échec du traitement de l’image',
     toast_zip_failed: 'Échec de création du fichier ZIP',
     toast_skipped_invalid: '{count} fichier(s) non valide(s) ignoré(s) : {files}',
-    about_dev_title: 'À propos du Développeur',
-    about_dev_subtitle: 'Conçu avec passion pour la confidentialité et la vitesse',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: 'Ingénieur Full Stack & Développeur Open Source',
-    about_dev_bio: 'Passionné par les outils web respectueux de la vie privée et les applications côté client garantissant la pleine propriété de vos données.',
-    about_dev_github: 'Profil GitHub',
-    about_dev_portfolio: 'Site Personnel',
-    about_dev_support: 'Soutenez le projet :',
     footer_text: '© {year} ImageWrangler. Tous droits réservés. Vos fichiers ne quittent jamais votre appareil.',
-    footer_dev: 'Créé par Ashutosh',
     faq_heading: 'Foire Aux Questions',
     faq_q1: 'Mes images sont-elles téléversées sur un serveur ?',
     faq_a1: 'Non. ImageWrangler fonctionne à 100% dans votre navigateur. Vos fichiers ne quittent jamais votre appareil.',
@@ -322,9 +286,6 @@ export const translations = {
   de: {
     app_title: 'ImageWrangler',
     app_tagline: 'Bilder offline komprimieren, skalieren und konvertieren',
-    nav_about_dev: 'Über den Entwickler',
-    nav_faq: 'FAQ',
-    nav_github: 'GitHub',
     dropzone_title: 'Bilder hierher ziehen & ablegen',
     dropzone_subtitle: 'oder klicken, um vom Gerät auszuwählen',
     dropzone_privacy: '100% im Browser. Deine Fotos verlassen dein Gerät niemals.',
@@ -378,16 +339,7 @@ export const translations = {
     toast_process_failed: 'Fehler beim Verarbeiten des Bildes',
     toast_zip_failed: 'ZIP-Erstellung fehlgeschlagen',
     toast_skipped_invalid: '{count} ungültige Datei(en) übersprungen: {files}',
-    about_dev_title: 'Über den Entwickler',
-    about_dev_subtitle: 'Entwickelt mit Fokus auf Datenschutz & Performance',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: 'Full-Stack-Entwickler & Open-Source-Schöpfer',
-    about_dev_bio: 'Begeistert von datenschutzfreundlichen Web-Tools und performanten Client-Side-Lösungen, bei denen Daten lokal bleiben.',
-    about_dev_github: 'GitHub-Profil',
-    about_dev_portfolio: 'Persönliche Website',
-    about_dev_support: 'Projekt unterstützen:',
     footer_text: '© {year} ImageWrangler. Alle Rechte vorbehalten. Deine Dateien bleiben auf deinem Gerät.',
-    footer_dev: 'Entwickelt von Ashutosh',
     faq_heading: 'Häufig gestellte Fragen',
     faq_q1: 'Werden meine Bilder auf einen Server hochgeladen?',
     faq_a1: 'Nein. ImageWrangler arbeitet zu 100 % lokal im Browser. Ihre Bilder verlassen Ihr Gerät zu keinem Zeitpunkt.',
@@ -413,9 +365,6 @@ export const translations = {
   hi: {
     app_title: 'ImageWrangler',
     app_tagline: 'ऑफ़लाइन इमेज कंप्रेस, रीसाइज़ और कन्वर्ट करें',
-    nav_about_dev: 'डेवलपर के बारे में',
-    nav_faq: 'अक्सर पूछे जाने वाले प्रश्न',
-    nav_github: 'गिटहब',
     dropzone_title: 'इमेज यहाँ खींचें और छोड़ें',
     dropzone_subtitle: 'या अपने डिवाइस से चुनने के लिए क्लिक करें',
     dropzone_privacy: '100% क्लाइंट-साइड। आपकी तस्वीरें आपके डिवाइस से बाहर कभी नहीं जातीं।',
@@ -469,16 +418,7 @@ export const translations = {
     toast_process_failed: 'इमेज प्रोसेस करने में त्रुटि',
     toast_zip_failed: 'ज़िप फ़ाइल बनाने में विफलता',
     toast_skipped_invalid: '{count} अमान्य फ़ाइलें छोड़ दी गईं: {files}',
-    about_dev_title: 'डेवलपर के बारे में',
-    about_dev_subtitle: 'गोपनीयता और गति को ध्यान में रखकर बनाया गया',
-    about_dev_name: 'आशुतोष (Ashutosh)',
-    about_dev_role: 'फुल स्टैक इंजीनियर और ओपन सोर्स निर्माता',
-    about_dev_bio: 'प्राइवेसी-फ़र्स्ट वेब टूल्स और तेज़ क्लाइंट-साइड टूल्स बनाने के प्रति उत्साही, ताकि उपयोगकर्ता का अपने डेटा पर पूर्ण नियंत्रण रहे।',
-    about_dev_github: 'गिटहब प्रोफ़ाइल',
-    about_dev_portfolio: 'पर्सनल वेबसाइट',
-    about_dev_support: 'प्रोजेक्ट का समर्थन करें:',
     footer_text: '© {year} ImageWrangler. सर्वाधिकार सुरक्षित। क्लाइंट-साइड प्रोसेसिंग — आपकी फ़ाइलें कभी बाहर नहीं जातीं।',
-    footer_dev: 'आशुतोष द्वारा निर्मित',
     faq_heading: 'अक्सर पूछे जाने वाले सवाल',
     faq_q1: 'क्या मेरी तस्वीरें किसी सर्वर पर अपलोड होती हैं?',
     faq_a1: 'नहीं। ImageWrangler पूरी तरह से 100% आपके ब्राउज़र में चलता है। आपकी फ़ाइलें आपके डिवाइस से कभी बाहर नहीं जाती हैं।',
@@ -504,9 +444,6 @@ export const translations = {
   ja: {
     app_title: 'ImageWrangler',
     app_tagline: '完全オフラインで画像圧縮・リサイズ・フォーマット変換',
-    nav_about_dev: '開発者について',
-    nav_faq: 'よくある質問',
-    nav_github: 'GitHub',
     dropzone_title: 'ここに画像をドラッグ＆ドロップ',
     dropzone_subtitle: 'またはクリックして端末から選択',
     dropzone_privacy: '100%ブラウザ完結。写真が外部に送信されることはありません。',
@@ -560,16 +497,7 @@ export const translations = {
     toast_process_failed: '画像の処理に失敗しました',
     toast_zip_failed: 'ZIPファイルの作成に失敗しました',
     toast_skipped_invalid: '無効な{count}件のファイルをスキップしました: {files}',
-    about_dev_title: '開発者について',
-    about_dev_subtitle: 'プライバシーと圧倒的な高速処理を追求',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: 'フルスタックエンジニア & オープンソース開発者',
-    about_dev_bio: 'ユーザーのプライバシーを最優先にしたWebツールや、端末内で完結するクライアントサイドアプリの開発に情熱を注いでいます。',
-    about_dev_github: 'GitHub プロフィール',
-    about_dev_portfolio: 'ポートフォリオサイト',
-    about_dev_support: 'プロジェクトを応援する:',
     footer_text: '© {year} ImageWrangler. 全著作権所有。画像データが外部へ送信されることはありません。',
-    footer_dev: '開発者: Ashutosh',
     faq_heading: 'よくある質問',
     faq_q1: '画像はサーバーにアップロードされますか？',
     faq_a1: 'いいえ。ImageWranglerは100%クライアントサイドで動作します。すべての処理はブラウザのメモリ内で行われ、外部に送信されません。',
@@ -595,9 +523,6 @@ export const translations = {
   zh: {
     app_title: 'ImageWrangler',
     app_tagline: '纯离线图片压缩、调整尺寸与格式转换工具',
-    nav_about_dev: '关于开发者',
-    nav_faq: '常见问题',
-    nav_github: 'GitHub',
     dropzone_title: '将图片拖放到此处',
     dropzone_subtitle: '或点击从您的设备中选择',
     dropzone_privacy: '100% 浏览器本地处理。您的照片绝不会离开您的设备。',
@@ -651,16 +576,7 @@ export const translations = {
     toast_process_failed: '图片处理失败',
     toast_zip_failed: '创建 ZIP 文件失败',
     toast_skipped_invalid: '已跳过 {count} 个无效文件: {files}',
-    about_dev_title: '关于开发者',
-    about_dev_subtitle: '以隐私保护与极速性能为核心打造',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: '全栈工程师 & 开源开发者',
-    about_dev_bio: '热衷于构建注重隐私的纯前端 Web 工具，让用户对个人数据享有 100% 的掌控权。',
-    about_dev_github: 'GitHub 主页',
-    about_dev_portfolio: '个人网站',
-    about_dev_support: '支持该项目：',
     footer_text: '© {year} ImageWrangler. 保留所有权利。纯前端本地处理 — 数据永不上云。',
-    footer_dev: '由 Ashutosh 精心打造',
     faq_heading: '常见问题解答',
     faq_q1: '我的图片会被上传到服务器吗？',
     faq_a1: '绝不会。ImageWrangler 100% 在本地浏览器中运行，图片从未离开您的设备，无任何数据上传。',
@@ -686,9 +602,6 @@ export const translations = {
   pt: {
     app_title: 'ImageWrangler',
     app_tagline: 'Comprima, redimensione e converta imagens offline',
-    nav_about_dev: 'Sobre o Desenvolvedor',
-    nav_faq: 'Perguntas',
-    nav_github: 'GitHub',
     dropzone_title: 'Arraste e solte imagens aqui',
     dropzone_subtitle: 'ou clique para selecionar do seu dispositivo',
     dropzone_privacy: '100% no navegador. Suas fotos nunca saem do seu computador.',
@@ -742,16 +655,7 @@ export const translations = {
     toast_process_failed: 'Falha ao processar a imagem',
     toast_zip_failed: 'Falha ao criar arquivo ZIP',
     toast_skipped_invalid: '{count} arquivo(s) inválido(s) ignorado(s): {files}',
-    about_dev_title: 'Sobre o Desenvolvedor',
-    about_dev_subtitle: 'Desenvolvido com foco total em privacidade e alta velocidade',
-    about_dev_name: 'Ashutosh',
-    about_dev_role: 'Engenheiro Full Stack & Criador Open Source',
-    about_dev_bio: 'Apaixonado por ferramentas web focadas em privacidade e aplicações no navegador que garantem controle total dos dados ao usuário.',
-    about_dev_github: 'Perfil no GitHub',
-    about_dev_portfolio: 'Site Pessoal',
-    about_dev_support: 'Apoie o projeto:',
     footer_text: '© {year} ImageWrangler. Todos os direitos reservados. Processamento local — seus arquivos nunca saem do dispositivo.',
-    footer_dev: 'Criado por Ashutosh',
     faq_heading: 'Perguntas Frequentes',
     faq_q1: 'Minhas imagens são enviadas para algum servidor?',
     faq_a1: 'Não. O ImageWrangler opera 100% localmente no seu navegador. Suas fotos nunca saem do seu dispositivo.',
@@ -780,10 +684,19 @@ export type TranslationKey = keyof typeof translations['en'];
 
 const STORAGE_KEY = 'imagewrangler_locale';
 
-export function getInitialLocale(): Locale {
+/**
+ * Module-level locale store.
+ * Every consumer subscribes through `useSyncExternalStore`, so switching the
+ * language re-renders the whole UI (not just the component that owns the hook
+ * instance), and all components always read the same value.
+ */
+let currentLocale: Locale | null = null;
+const localeListeners = new Set<() => void>();
+
+function readStoredLocale(): Locale {
   if (typeof window === 'undefined') return 'en';
   try {
-    const saved = localStorage.getItem(STORAGE_KEY) as Locale;
+    const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
     if (saved && translations[saved]) {
       return saved;
     }
@@ -795,6 +708,39 @@ export function getInitialLocale(): Locale {
     // Ignore localStorage errors
   }
   return 'en';
+}
+
+export function getInitialLocale(): Locale {
+  if (!currentLocale) {
+    currentLocale = readStoredLocale();
+  }
+  return currentLocale;
+}
+
+function subscribeToLocale(listener: () => void): () => void {
+  localeListeners.add(listener);
+  return () => {
+    localeListeners.delete(listener);
+  };
+}
+
+/**
+ * Set the active locale, persist it, sync `<html lang>`, and notify all
+ * subscribed components.
+ */
+export function setLocale(newLocale: Locale): void {
+  if (!translations[newLocale] || newLocale === getInitialLocale()) return;
+
+  currentLocale = newLocale;
+  try {
+    localStorage.setItem(STORAGE_KEY, newLocale);
+  } catch {
+    // Ignore storage errors
+  }
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = newLocale;
+  }
+  localeListeners.forEach((listener) => listener());
 }
 
 export function translate(
@@ -818,32 +764,26 @@ export function translate(
  * Custom React Hook for i18n
  */
 export function useTranslation() {
-  const [currentLocale, setCurrentLocale] = useState<Locale>('en');
+  const locale = useSyncExternalStore(subscribeToLocale, getInitialLocale, () => 'en' as Locale);
 
+  // Keep <html lang> in sync with the active locale for a11y and SEO
   useEffect(() => {
-    setCurrentLocale(getInitialLocale());
-  }, []);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const changeLocale = useCallback((newLocale: Locale) => {
-    if (translations[newLocale]) {
-      setCurrentLocale(newLocale);
-      try {
-        localStorage.setItem(STORAGE_KEY, newLocale);
-      } catch {
-        // Ignore storage errors
-      }
-    }
+    setLocale(newLocale);
   }, []);
 
   const t = useCallback(
     (key: TranslationKey, params?: Record<string, string | number>) => {
-      return translate(key, currentLocale, params);
+      return translate(key, locale, params);
     },
-    [currentLocale]
+    [locale]
   );
 
   return {
-    currentLocale,
+    currentLocale: locale,
     changeLocale,
     t,
     locales: SUPPORTED_LOCALES,

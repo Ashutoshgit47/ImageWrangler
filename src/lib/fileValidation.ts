@@ -74,11 +74,18 @@ async function isAVIF(file: File): Promise<boolean> {
     return brands.includes('avif') || brands.includes('avis');
 }
 
+interface DimensionCheck {
+    ok: boolean;
+    width?: number;
+    height?: number;
+}
+
 /**
  * Safely check dimensions using ImageBitmap or HTMLImageElement fallback
- * Enforces strict decompression bomb limits.
+ * Enforces strict decompression bomb limits and returns the decoded size so
+ * callers never need to decode the same file a second time.
  */
-async function checkDimensions(file: File): Promise<boolean> {
+async function checkDimensions(file: File): Promise<DimensionCheck> {
     try {
         if (typeof createImageBitmap !== 'undefined') {
             try {
@@ -88,15 +95,15 @@ async function checkDimensions(file: File): Promise<boolean> {
 
                 if (width > SecurityConstants.MAX_WIDTH || height > SecurityConstants.MAX_HEIGHT) {
                     console.warn(`Image dimensions ${width}x${height} exceed limit ${SecurityConstants.MAX_WIDTH}x${SecurityConstants.MAX_HEIGHT}`);
-                    return false;
+                    return { ok: false };
                 }
 
                 if (width * height > SecurityConstants.MAX_PIXELS) {
                     console.warn(`Total pixels ${width * height} exceed limit ${SecurityConstants.MAX_PIXELS}`);
-                    return false;
+                    return { ok: false };
                 }
 
-                return true;
+                return { ok: true, width, height };
             } catch {
                 // Fallback to HTMLImageElement below if createImageBitmap fails
             }
@@ -110,45 +117,43 @@ async function checkDimensions(file: File): Promise<boolean> {
                     URL.revokeObjectURL(url);
                     const { naturalWidth: width, naturalHeight: height } = img;
                     if (width > SecurityConstants.MAX_WIDTH || height > SecurityConstants.MAX_HEIGHT) {
-                        resolve(false);
+                        resolve({ ok: false });
                     } else if (width * height > SecurityConstants.MAX_PIXELS) {
-                        resolve(false);
+                        resolve({ ok: false });
                     } else {
-                        resolve(true);
+                        resolve({ ok: true, width, height });
                     }
                 };
                 img.onerror = () => {
                     URL.revokeObjectURL(url);
-                    resolve(false);
+                    resolve({ ok: false });
                 };
                 img.src = url;
             });
         }
 
-        return true;
+        return { ok: true };
     } catch {
-        return false;
+        return { ok: false };
     }
 }
 
 /**
- * Sanitize filename to prevent path traversal and remove control characters
+ * Sanitize a filename for downloads and ZIP entries: strips path separators,
+ * control characters, and traversal sequences while keeping unicode letters.
  */
-export function sanitizeFilename(filename: string): string {
-    // Remove null bytes and control characters
-    let name = filename.replace(/[\x00-\x1f\x80-\x9f]/g, '');
-
-    // Remove ".." for path traversal protection
-    name = name.replace(/\.\./g, '');
-
-    // Replace potentially dangerous characters with underscore
-    name = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+export function sanitizeFilename(filename: string, fallback = 'image'): string {
+    let name = filename
+        .replace(/[\x00-\x1f\x80-\x9f]/g, '')
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/\.\./g, '')
+        .trim();
 
     // Ensure reasonable length
-    if (name.length > 200) name = name.substring(0, 200);
+    if (name.length > 120) name = name.slice(0, 120);
 
     // Ensure it has a name
-    if (name.length === 0 || name === '.') name = 'image';
+    if (name.length === 0 || name === '.') name = fallback;
 
     return name;
 }
@@ -211,23 +216,15 @@ export async function validateImageFile(file: File): Promise<ValidationResult> {
     // For this audit, we focus on *supported* detected types.
 
     // 7. Decompression Bomb / Dimension Check
-    const safeDimensions = await checkDimensions(file);
-    if (!safeDimensions) {
+    const dimensions = await checkDimensions(file);
+    if (!dimensions.ok) {
         return { isValid: false, error: 'Image exceeds maximum safe dimensions (Decompression Bomb protection)' };
     }
 
     return {
         isValid: true,
-        detectedType: detectedType,
+        detectedType,
+        width: dimensions.width,
+        height: dimensions.height,
     };
-}
-
-/**
- * Quick validation - only checks if it looks like an image and isn't huge
- */
-export async function quickValidateImage(file: File): Promise<boolean> {
-    if ((file.type && !file.type.startsWith('image/')) || file.size === 0 || file.size > SecurityConstants.MAX_FILE_SIZE) {
-        return false;
-    }
-    return (await detectImageType(file)) !== null;
 }

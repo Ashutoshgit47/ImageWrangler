@@ -13,6 +13,7 @@ export default {
         extend: {
             fontFamily: {
                 body: ['Inter', 'sans-serif'],
+                display: ['Cormorant Garamond', 'Tiempos Headline', 'Georgia', 'serif'],
             },
             colors: {
                 background: 'var(--color-background)',
@@ -44,6 +45,7 @@ export default {
                 destructive: {
                     DEFAULT: 'var(--color-destructive)',
                     foreground: 'var(--color-destructive-foreground)',
+                    hover: 'var(--color-destructive-hover)',
                 },
                 success: 'var(--color-success)',
                 warning: 'var(--color-warning)',

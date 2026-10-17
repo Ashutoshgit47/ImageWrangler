@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import type { ImageFile, ProcessOptions, CropRegion } from '../lib/types';
-import type { PixelCrop } from 'react-image-crop';
 import { formatBytes, cn } from '../lib/utils';
 import { useTranslation } from '../lib/i18n';
 import { CropTool } from './CropTool';
@@ -20,7 +19,7 @@ import {
     Download,
     CheckSquare,
     Square,
-} from 'lucide-react';
+} from './icons';
 
 interface ImageCardProps {
     image: ImageFile;
@@ -100,27 +99,38 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
     const handleCropComplete = (crop: CropRegion) => {
         const cropW = Math.max(1, Math.round(crop.width));
         const cropH = Math.max(1, Math.round(crop.height));
-        const pixelCrop: PixelCrop = {
-            unit: 'px',
-            x: Math.round(crop.x),
-            y: Math.round(crop.y),
+        onOptionsChange(image.id, {
+            crop: {
+                x: Math.round(crop.x),
+                y: Math.round(crop.y),
+                width: cropW,
+                height: cropH,
+            },
             width: cropW,
             height: cropH,
-        };
-        onOptionsChange(image.id, { crop: pixelCrop, width: cropW, height: cropH });
+        });
         setShowCrop(false);
     };
 
+    // Un-crop without discarding the user's resize settings
     const handleCropReset = () => {
-        onOptionsChange(image.id, {
-            crop: undefined,
-            width: image.originalWidth,
-            height: image.originalHeight,
-        });
+        onOptionsChange(image.id, { crop: undefined });
     };
 
-    const estimatedSize = image.processedFile ? formatBytes(image.processedFile.size) : '...';
-    const savingsPercent = (image.processedFile && image.file.size > 0)
+    // Target size must be a positive whole number of KB (or empty to disable)
+    const handleTargetSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value;
+        if (raw === '') {
+            onOptionsChange(image.id, { targetSizeKB: undefined });
+            return;
+        }
+        const parsed = Math.floor(Number(raw));
+        if (!Number.isFinite(parsed) || parsed <= 0) return;
+        onOptionsChange(image.id, { targetSizeKB: Math.min(parsed, 102400) });
+    };
+
+    const estimatedSize = image.status === 'done' && image.processedFile ? formatBytes(image.processedFile.size) : '…';
+    const savingsPercent = (image.status === 'done' && image.processedFile && image.file.size > 0)
         ? Math.round(((image.processedFile.size - image.file.size) / image.file.size) * 100)
         : null;
     // AVIF is lossy and supports quality & weight targeting
@@ -131,7 +141,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
         switch (image.status) {
             case 'pending':
                 return (
-                    <span className="inline-flex items-center px-2 py-1 text-xs rounded bg-muted text-muted-foreground">
+                    <span className="inline-flex items-center px-2 py-1 text-xs rounded bg-elevated text-muted-foreground">
                         {t('status_pending')}
                     </span>
                 );
@@ -170,7 +180,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                     {onToggleSelect && (
                         <button
                             onClick={() => onToggleSelect(image.id)}
-                            className="mt-0.5 flex-shrink-0 p-0.5 rounded hover:bg-muted transition-colors"
+                            className="mt-0.5 flex-shrink-0 p-0.5 rounded hover:bg-elevated transition-colors"
                             title={isSelected ? t('btn_deselect_all') : t('btn_select_all')}
                         >
                             {isSelected ? (
@@ -188,7 +198,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                 </div>
 
                 {/* Image Preview */}
-                <div className="relative w-full aspect-video bg-muted overflow-hidden my-2.5">
+                <div className="relative w-full aspect-video bg-elevated overflow-hidden my-2.5">
                     <img
                         src={image.previewUrl}
                         alt={`Preview of ${image.file.name}`}
@@ -252,7 +262,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
 
                     {/* Resize by Weight (Lossy: JPEG, WebP, AVIF) */}
                     {isQualitySupported ? (
-                        <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/30">
+                        <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-background">
                             <div className="flex-1 space-y-0.5">
                                 <label htmlFor={`weight-${image.id}`} className="text-xs font-medium flex items-center gap-1">
                                     {t('target_kb')}
@@ -262,15 +272,15 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                             <input
                                 id={`weight-${image.id}`}
                                 type="number"
-                                min={10}
+                                min={1}
                                 placeholder="500"
                                 value={image.options.targetSizeKB || ''}
-                                onChange={(e) => handleOptionChange('targetSizeKB', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                                onChange={handleTargetSizeChange}
                                 className="w-16 h-8 px-2 rounded-md border border-input bg-background text-xs focus:outline-none focus:ring-2 focus:ring-ring"
                             />
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-muted/30">
+                        <div className="flex items-center gap-2 p-2 rounded-md border border-border bg-background">
                             <p className="text-[10px] text-muted-foreground italic">
                                 {image.options.format.toUpperCase()} {t('lossless_note')}
                             </p>
@@ -303,7 +313,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                         onClick={() => handleOptionChange('keepAspectRatio', !image.options.keepAspectRatio)}
                                         className={cn(
                                             "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
-                                            image.options.keepAspectRatio ? "bg-primary" : "bg-input"
+                                            image.options.keepAspectRatio ? "bg-primary" : "bg-border"
                                         )}
                                     >
                                         <span
@@ -347,7 +357,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                     {/* Crop Button */}
                     <button
                         onClick={() => setShowCrop(true)}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-border bg-background hover:bg-elevated transition-colors text-xs"
                     >
                         <Crop className="h-3 w-3" />
                         {t('crop_image')}
@@ -363,7 +373,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                         {savingsPercent !== null && (
                             <span className={cn(
                                 "ml-1.5 text-[10px] font-semibold",
-                                savingsPercent < 0 ? "text-emerald-500" : "text-muted-foreground"
+                                savingsPercent < 0 ? "text-success" : "text-muted-foreground"
                             )}>
                                 ({savingsPercent <= 0 ? `${savingsPercent}%` : `+${savingsPercent}%`})
                             </span>
@@ -372,7 +382,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowPreview(true)}
-                            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                            className="p-1.5 rounded-md hover:bg-elevated transition-colors"
                             title={t('preview')}
                         >
                             <Eye className="h-4 w-4" />
@@ -395,7 +405,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                                 }
                             }}
                             disabled={!image.processedFile}
-                            className="p-1.5 rounded-md hover:bg-muted transition-colors text-primary disabled:opacity-50"
+                            className="p-1.5 rounded-md hover:bg-elevated transition-colors text-primary disabled:opacity-50"
                             title={t('download')}
                         >
                             <Download className="h-4 w-4" />
@@ -403,7 +413,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                         </button>
                         <button
                             onClick={() => onRemove(image.id)}
-                            className="p-1.5 rounded-md hover:bg-muted transition-colors text-destructive"
+                            className="p-1.5 rounded-md hover:bg-elevated transition-colors text-destructive"
                             title={t('remove')}
                         >
                             <Trash2 className="h-4 w-4" />
@@ -428,7 +438,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
             {/* Preview Modal */}
             {showPreview && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+                    className="fixed inset-0 z-50 bg-accent/80 flex items-center justify-center p-4"
                     onClick={() => setShowPreview(false)}
                     role="dialog"
                     aria-modal="true"
@@ -436,7 +446,7 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                 >
                     <div className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between p-4 border-b border-border">
-                            <h3 className="text-lg font-semibold">{t('preview')}</h3>
+                            <h3 className="font-display text-xl font-medium">{t('preview')}</h3>
                             <button
                                 onClick={() => setShowPreview(false)}
                                 className="p-2 hover:bg-muted rounded-md"
@@ -447,16 +457,16 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                             <div>
-                                <h4 className="font-semibold mb-2 text-center">{t('original')} ({formatBytes(image.file.size)})</h4>
-                                <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                                <h4 className="font-display text-base font-medium mb-2 text-center">{t('original')} ({formatBytes(image.file.size)})</h4>
+                                <div className="relative w-full aspect-video bg-elevated rounded-md overflow-hidden">
                                     <img src={image.previewUrl} alt="Before" className="absolute inset-0 w-full h-full object-contain" />
                                 </div>
                             </div>
                             <div>
-                                <h4 className="font-semibold mb-2 text-center">
+                                <h4 className="font-display text-base font-medium mb-2 text-center">
                                     {image.processedFile ? `${t('processed')} (${formatBytes(image.processedFile.size)})` : t('unchanged')}
                                 </h4>
-                                <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                                <div className="relative w-full aspect-video bg-elevated rounded-md overflow-hidden">
                                     <img src={image.processedUrl || image.previewUrl} alt="After" className="absolute inset-0 w-full h-full object-contain" />
                                 </div>
                             </div>
