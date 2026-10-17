@@ -185,6 +185,19 @@ export function ImageWrangler() {
 
     // Remove image
     const handleRemoveImage = useCallback((id: string) => {
+        const timeout = debounceTimeoutRef.current.get(id);
+        if (timeout) {
+            clearTimeout(timeout);
+            debounceTimeoutRef.current.delete(id);
+        }
+        setSelectedIds(prev => {
+            if (prev.has(id)) {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            }
+            return prev;
+        });
         setImages(prev => {
             const imageToRemove = prev.find(img => img.id === id);
             if (imageToRemove) {

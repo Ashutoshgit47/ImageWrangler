@@ -40,21 +40,26 @@ export function CropTool({
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const [displayScale, setDisplayScale] = useState(1);
-    const [crop, setCrop] = useState<CropRegion>(
-        initialCrop && initialCrop.width > 0 && initialCrop.height > 0
-            ? initialCrop
-            : {
-                // Default: full image selected so user drags inward to crop
-                x: 0,
-                y: 0,
-                width: originalWidth,
-                height: originalHeight,
-            }
-    );
+    const [crop, setCrop] = useState<CropRegion>(() => {
+        if (initialCrop && initialCrop.width > 0 && initialCrop.height > 0) {
+            const safeW = Math.max(50, Math.min(originalWidth, initialCrop.width));
+            const safeH = Math.max(50, Math.min(originalHeight, initialCrop.height));
+            const safeX = Math.max(0, Math.min(originalWidth - safeW, initialCrop.x));
+            const safeY = Math.max(0, Math.min(originalHeight - safeH, initialCrop.y));
+            return { x: safeX, y: safeY, width: safeW, height: safeH };
+        }
+        return {
+            x: 0,
+            y: 0,
+            width: originalWidth,
+            height: originalHeight,
+        };
+    });
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragType, setDragType] = useState<DragType>(null);
     const dragStartRef = useRef({ x: 0, y: 0 });
+    const latestPosRef = useRef({ x: 0, y: 0 });
     const requestRef = useRef<number | undefined>(undefined);
 
     // Escape key listener for keyboard accessibility
@@ -99,20 +104,23 @@ export function CropTool({
     const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent, type: DragType) => {
         e.preventDefault();
         e.stopPropagation();
+        const pos = getClientPos(e);
         setIsDragging(true);
         setDragType(type);
-        dragStartRef.current = getClientPos(e);
+        dragStartRef.current = pos;
+        latestPosRef.current = pos;
     }, []);
 
     // Drag move handler - throttled with requestAnimationFrame
-    // Bug B fix: dragStartRef (not state) is read/written each frame so no re-renders.
     const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
         if (!isDragging || !dragType || displayScale <= 0) return;
+
+        latestPosRef.current = getClientPos(e);
 
         if (requestRef.current) return;
 
         requestRef.current = requestAnimationFrame(() => {
-            const pos = getClientPos(e);
+            const pos = latestPosRef.current;
 
             // Delta in original image pixels
             const dx = (pos.x - dragStartRef.current.x) / displayScale;
@@ -266,10 +274,10 @@ export function CropTool({
                     }
 
                     // Final Bound Clamp safety
-                    if (newX < 0) { newW += newX; newX = 0; }
-                    if (newY < 0) { newH += newY; newY = 0; }
-                    if (newX + newW > originalWidth) newW = originalWidth - newX;
-                    if (newY + newH > originalHeight) newH = originalHeight - newY;
+                    newW = Math.max(50, Math.min(originalWidth, newW));
+                    newH = Math.max(50, Math.min(originalHeight, newH));
+                    newX = Math.max(0, Math.min(originalWidth - newW, newX));
+                    newY = Math.max(0, Math.min(originalHeight - newH, newY));
 
                     x = newX; y = newY; width = newW; height = newH;
                 }
@@ -313,22 +321,35 @@ export function CropTool({
         setAspectRatio(ratio);
         if (ratio) {
             setCrop((prev) => {
-                let newWidth = prev.width;
-                let newHeight = newWidth / ratio;
+                // Calculate target crop dimensions fitting within original image
+                let targetW = prev.width;
+                let targetH = targetW / ratio;
 
-                if (prev.y + newHeight > originalHeight) {
-                    newHeight = originalHeight - prev.y;
-                    newWidth = newHeight * ratio;
+                if (targetH > originalHeight) {
+                    targetH = originalHeight;
+                    targetW = targetH * ratio;
                 }
-                if (prev.x + newWidth > originalWidth) {
-                    newWidth = originalWidth - prev.x;
-                    newHeight = newWidth / ratio;
+                if (targetW > originalWidth) {
+                    targetW = originalWidth;
+                    targetH = targetW / ratio;
                 }
+
+                // Center crop box around previous crop center
+                const centerX = prev.x + prev.width / 2;
+                const centerY = prev.y + prev.height / 2;
+
+                let targetX = centerX - targetW / 2;
+                let targetY = centerY - targetH / 2;
+
+                // Clamp to image boundaries
+                targetX = Math.max(0, Math.min(originalWidth - targetW, targetX));
+                targetY = Math.max(0, Math.min(originalHeight - targetH, targetY));
 
                 return {
-                    ...prev,
-                    width: Math.max(50, Math.round(newWidth)),
-                    height: Math.max(50, Math.round(newHeight)),
+                    x: Math.round(targetX),
+                    y: Math.round(targetY),
+                    width: Math.max(50, Math.round(targetW)),
+                    height: Math.max(50, Math.round(targetH)),
                 };
             });
         }

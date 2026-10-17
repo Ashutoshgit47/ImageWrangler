@@ -98,42 +98,25 @@ export function ImageCard({ image, isSelected, onToggleSelect, onOptionsChange, 
     };
 
     const handleCropComplete = (crop: CropRegion) => {
-        let newWidth = image.options.width;
-        let newHeight = image.options.height;
-
-        if (image.options.keepAspectRatio) {
-            const oldSourceWidth = image.options.crop?.width || image.originalWidth;
-            if (oldSourceWidth > 0) {
-                const ratio = crop.width / oldSourceWidth;
-                newWidth = Math.max(1, Math.round(image.options.width * ratio));
-                newHeight = Math.max(1, Math.round(image.options.height * ratio));
-            }
-        }
-
-        const pixelCrop: PixelCrop = { ...crop, unit: 'px' };
-        onOptionsChange(image.id, { crop: pixelCrop, width: newWidth, height: newHeight });
+        const cropW = Math.max(1, Math.round(crop.width));
+        const cropH = Math.max(1, Math.round(crop.height));
+        const pixelCrop: PixelCrop = {
+            unit: 'px',
+            x: Math.round(crop.x),
+            y: Math.round(crop.y),
+            width: cropW,
+            height: cropH,
+        };
+        onOptionsChange(image.id, { crop: pixelCrop, width: cropW, height: cropH });
         setShowCrop(false);
     };
 
     const handleCropReset = () => {
-        const oldCrop = image.options.crop;
-        if (oldCrop && oldCrop.width > 0 && oldCrop.height > 0) {
-            const ratioX = image.originalWidth / oldCrop.width;
-            const ratioY = image.originalHeight / oldCrop.height;
-            const ratio = Math.min(ratioX, ratioY);
-            
-            onOptionsChange(image.id, {
-                crop: undefined,
-                width: Math.round(image.options.width * ratio),
-                height: Math.round(image.options.height * ratio),
-            });
-        } else {
-            onOptionsChange(image.id, {
-                crop: undefined,
-                width: image.originalWidth,
-                height: image.originalHeight,
-            });
-        }
+        onOptionsChange(image.id, {
+            crop: undefined,
+            width: image.originalWidth,
+            height: image.originalHeight,
+        });
     };
 
     const estimatedSize = image.processedFile ? formatBytes(image.processedFile.size) : '...';
