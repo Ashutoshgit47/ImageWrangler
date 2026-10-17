@@ -99,10 +99,10 @@ export function Header() {
         >
             <div className="container mx-auto flex h-14 items-center justify-between px-4">
                 {/* Brand */}
-                <a href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                    <img src="/favicon.svg" alt="ImageWrangler Logo" className="h-7 w-7" />
-                    <span className="font-display text-xl font-medium tracking-tight text-primary">
-                        ImageWrangler
+                <a href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+                    <img src="/favicon.svg" alt="ImageWrangler Logo" className="h-7 w-7 rounded-lg" />
+                    <span className="font-sans text-lg font-bold tracking-tight text-foreground">
+                        Image<span className="text-primary">Wrangler</span>
                     </span>
                 </a>
 
